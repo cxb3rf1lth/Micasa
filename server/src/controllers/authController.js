@@ -90,8 +90,24 @@ const login = async (req, res) => {
 // @access  Private
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password').populate('partnerId', 'username displayName');
-    res.json(user);
+    const user = User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get partner info if exists
+    const partner = User.getPartner(req.user._id);
+    
+    const userResponse = {
+      _id: user._id,
+      username: user.username,
+      displayName: user.displayName,
+      partnerId: partner ? partner._id : null,
+      avatar: user.avatar,
+      preferences: user.preferences
+    };
+    
+    res.json(userResponse);
   } catch (error) {
     console.error('Get me error:', error);
     res.status(500).json({ message: 'Server error' });
