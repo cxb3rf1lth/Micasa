@@ -1,0 +1,162 @@
+.dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--grey-200);
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-subtitle {
+  color: var(--grey-400);
+  font-size: 1rem;
+}
+
+.dashboard-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--success);
+  border-radius: 20px;
+  color: var(--success);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.dashboard-card {
+  background: var(--grey-900);
+  border: 1px solid var(--grey-800);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dashboard-card:hover {
+  border-color: var(--purple-600);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(157, 141, 241, 0.2);
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: rgba(157, 141, 241, 0.1);
+  border-radius: 12px;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--grey-200);
+  margin-bottom: 0.25rem;
+}
+
+.card-description {
+  font-size: 0.875rem;
+  color: var(--grey-400);
+}
+
+.card-count {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.welcome-section {
+  background: var(--gradient-purple);
+  border-radius: 16px;
+  padding: 3rem;
+  text-align: center;
+  color: white;
+}
+
+.welcome-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.welcome-text {
+  font-size: 1.125rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.welcome-features {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-title {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-section {
+    padding: 2rem 1.5rem;
+  }
+
+  .welcome-features {
+    gap: 1.5rem;
+  }
+}
