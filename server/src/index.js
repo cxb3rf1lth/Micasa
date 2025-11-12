@@ -33,6 +33,13 @@ app.use('/api/chores', require('./routes/chores'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/todos', require('./routes/todos'));
 app.use('/api/reminders', require('./routes/reminders'));
+app.use('/api/whiteboard', require('./routes/whiteboard'));
+app.use('/api/vision-board', require('./routes/visionBoard'));
+app.use('/api/messages', require('./routes/messages'));
+app.use('/api/webhooks', require('./routes/webhooks'));
+
+// Make io accessible in routes
+app.set('io', io);
 
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
@@ -61,6 +68,18 @@ io.on('connection', (socket) => {
 
   socket.on('reminder-updated', (data) => {
     socket.to(data.householdId).emit('reminder-updated', data);
+  });
+
+  socket.on('whiteboard-updated', (data) => {
+    socket.to(data.householdId).emit('whiteboard-updated', data);
+  });
+
+  socket.on('vision-board-updated', (data) => {
+    socket.to(data.householdId).emit('vision-board-updated', data);
+  });
+
+  socket.on('message-received', (data) => {
+    socket.to(data.householdId).emit('message-received', data);
   });
 
   socket.on('disconnect', () => {
