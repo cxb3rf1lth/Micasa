@@ -4,7 +4,7 @@ const cors = require('cors');
 const http = require('http');
 const socketio = require('socket.io');
 const connectDB = require('./config/database');
-const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, authLimiter, staticLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const server = http.createServer(app);
@@ -78,7 +78,8 @@ if (process.env.NODE_ENV === 'production') {
   const path = require('path');
   app.use(express.static(path.join(__dirname, '../../client/dist')));
   
-  app.get('*', (req, res) => {
+  // Apply rate limiting to SPA fallback route
+  app.get('*', staticLimiter, (req, res) => {
     res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
   });
 }
