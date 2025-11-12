@@ -11,10 +11,7 @@ const getHouseholdId = (user) => {
 const getChores = async (req, res) => {
   try {
     const householdId = getHouseholdId(req.user);
-    const chores = await Chore.find({ householdId })
-      .populate('assignedTo', 'displayName username')
-      .populate('completedBy', 'displayName username')
-      .sort({ dueDate: 1 });
+    const chores = Chore.find({ householdId });
     
     res.json(chores);
   } catch (error) {
@@ -31,7 +28,7 @@ const createChore = async (req, res) => {
     const householdId = getHouseholdId(req.user);
     const { title, description, assignedTo, frequency, dueDate, priority, category, estimatedTime } = req.body;
 
-    const chore = await Chore.create({
+    const chore = Chore.create({
       householdId,
       title,
       description,
@@ -43,10 +40,7 @@ const createChore = async (req, res) => {
       estimatedTime
     });
 
-    const populatedChore = await Chore.findById(chore._id)
-      .populate('assignedTo', 'displayName username');
-
-    res.status(201).json(populatedChore);
+    res.status(201).json(chore);
   } catch (error) {
     console.error('Create chore error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -61,9 +55,9 @@ const updateChore = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const chore = await Chore.findOne({ _id: id, householdId });
+    const chore = Chore.findById(id);
     
-    if (!chore) {
+    if (!chore || chore.householdId !== householdId) {
       return res.status(404).json({ message: 'Chore not found' });
     }
 
@@ -75,9 +69,7 @@ const updateChore = async (req, res) => {
       updateData.completedAt = new Date();
     }
 
-    const updatedChore = await Chore.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('assignedTo', 'displayName username')
-      .populate('completedBy', 'displayName username');
+    const updatedChore = Chore.findByIdAndUpdate(id, updateData);
 
     res.json(updatedChore);
   } catch (error) {
@@ -94,11 +86,13 @@ const deleteChore = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const chore = await Chore.findOneAndDelete({ _id: id, householdId });
+    const chore = Chore.findById(id);
     
-    if (!chore) {
+    if (!chore || chore.householdId !== householdId) {
       return res.status(404).json({ message: 'Chore not found' });
     }
+
+    Chore.findByIdAndDelete(id);
 
     res.json({ message: 'Chore deleted' });
   } catch (error) {

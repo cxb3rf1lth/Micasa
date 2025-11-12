@@ -11,10 +11,7 @@ const getHouseholdId = (user) => {
 const getAppointments = async (req, res) => {
   try {
     const householdId = getHouseholdId(req.user);
-    const appointments = await Appointment.find({ householdId })
-      .populate('createdBy', 'displayName username')
-      .populate('attendees', 'displayName username')
-      .sort({ startTime: 1 });
+    const appointments = Appointment.find({ householdId });
     
     res.json(appointments);
   } catch (error) {
@@ -31,7 +28,7 @@ const createAppointment = async (req, res) => {
     const householdId = getHouseholdId(req.user);
     const { title, description, startTime, endTime, location, attendees, category, reminder, isRecurring, recurrencePattern, color } = req.body;
 
-    const appointment = await Appointment.create({
+    const appointment = Appointment.create({
       householdId,
       title,
       description,
@@ -47,11 +44,7 @@ const createAppointment = async (req, res) => {
       createdBy: req.user._id
     });
 
-    const populatedAppointment = await Appointment.findById(appointment._id)
-      .populate('createdBy', 'displayName username')
-      .populate('attendees', 'displayName username');
-
-    res.status(201).json(populatedAppointment);
+    res.status(201).json(appointment);
   } catch (error) {
     console.error('Create appointment error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -66,15 +59,13 @@ const updateAppointment = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const appointment = await Appointment.findOne({ _id: id, householdId });
+    const appointment = Appointment.findById(id);
     
-    if (!appointment) {
+    if (!appointment || appointment.householdId !== householdId) {
       return res.status(404).json({ message: 'Appointment not found' });
     }
 
-    const updatedAppointment = await Appointment.findByIdAndUpdate(id, req.body, { new: true })
-      .populate('createdBy', 'displayName username')
-      .populate('attendees', 'displayName username');
+    const updatedAppointment = Appointment.findByIdAndUpdate(id, req.body);
 
     res.json(updatedAppointment);
   } catch (error) {
@@ -91,11 +82,13 @@ const deleteAppointment = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const appointment = await Appointment.findOneAndDelete({ _id: id, householdId });
+    const appointment = Appointment.findById(id);
     
-    if (!appointment) {
+    if (!appointment || appointment.householdId !== householdId) {
       return res.status(404).json({ message: 'Appointment not found' });
     }
+
+    Appointment.findByIdAndDelete(id);
 
     res.json({ message: 'Appointment deleted' });
   } catch (error) {

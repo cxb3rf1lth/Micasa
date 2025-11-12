@@ -11,10 +11,7 @@ const getHouseholdId = (user) => {
 const getTodoLists = async (req, res) => {
   try {
     const householdId = getHouseholdId(req.user);
-    const todos = await TodoList.find({ householdId })
-      .populate('owner', 'displayName username')
-      .populate('sharedWith', 'displayName username')
-      .sort({ createdAt: -1 });
+    const todos = TodoList.find({ householdId });
     
     res.json(todos);
   } catch (error) {
@@ -31,7 +28,7 @@ const createTodoList = async (req, res) => {
     const householdId = getHouseholdId(req.user);
     const { title, description, items, isShared, sharedWith, category, priority, dueDate, color } = req.body;
 
-    const todoList = await TodoList.create({
+    const todoList = TodoList.create({
       householdId,
       title,
       description,
@@ -45,11 +42,7 @@ const createTodoList = async (req, res) => {
       color
     });
 
-    const populatedTodo = await TodoList.findById(todoList._id)
-      .populate('owner', 'displayName username')
-      .populate('sharedWith', 'displayName username');
-
-    res.status(201).json(populatedTodo);
+    res.status(201).json(todoList);
   } catch (error) {
     console.error('Create todo error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -64,15 +57,13 @@ const updateTodoList = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const todo = await TodoList.findOne({ _id: id, householdId });
+    const todo = TodoList.findById(id);
     
-    if (!todo) {
+    if (!todo || todo.householdId !== householdId) {
       return res.status(404).json({ message: 'Todo list not found' });
     }
 
-    const updatedTodo = await TodoList.findByIdAndUpdate(id, req.body, { new: true })
-      .populate('owner', 'displayName username')
-      .populate('sharedWith', 'displayName username');
+    const updatedTodo = TodoList.findByIdAndUpdate(id, req.body);
 
     res.json(updatedTodo);
   } catch (error) {
@@ -90,18 +81,13 @@ const addTodoItem = async (req, res) => {
     const householdId = getHouseholdId(req.user);
     const { text } = req.body;
     
-    const todo = await TodoList.findOne({ _id: id, householdId });
+    const todo = TodoList.findById(id);
     
-    if (!todo) {
+    if (!todo || todo.householdId !== householdId) {
       return res.status(404).json({ message: 'Todo list not found' });
     }
 
-    todo.items.push({ text, isCompleted: false });
-    await todo.save();
-
-    const updatedTodo = await TodoList.findById(id)
-      .populate('owner', 'displayName username')
-      .populate('sharedWith', 'displayName username');
+    const updatedTodo = TodoList.addItem(id, { text, isCompleted: false });
 
     res.json(updatedTodo);
   } catch (error) {
@@ -118,28 +104,20 @@ const updateTodoItem = async (req, res) => {
     const { id, itemId } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const todo = await TodoList.findOne({ _id: id, householdId });
+    const todo = TodoList.findById(id);
     
-    if (!todo) {
+    if (!todo || todo.householdId !== householdId) {
       return res.status(404).json({ message: 'Todo list not found' });
     }
 
-    const item = todo.items.id(itemId);
-    if (!item) {
-      return res.status(404).json({ message: 'Todo item not found' });
-    }
-
-    if (req.body.text !== undefined) item.text = req.body.text;
+    const updateData = {};
+    if (req.body.text !== undefined) updateData.text = req.body.text;
     if (req.body.isCompleted !== undefined) {
-      item.isCompleted = req.body.isCompleted;
-      item.completedAt = req.body.isCompleted ? new Date() : null;
+      updateData.isCompleted = req.body.isCompleted;
+      updateData.completedAt = req.body.isCompleted ? new Date() : null;
     }
 
-    await todo.save();
-
-    const updatedTodo = await TodoList.findById(id)
-      .populate('owner', 'displayName username')
-      .populate('sharedWith', 'displayName username');
+    const updatedTodo = TodoList.updateItem(id, itemId, updateData);
 
     res.json(updatedTodo);
   } catch (error) {
@@ -156,18 +134,13 @@ const deleteTodoItem = async (req, res) => {
     const { id, itemId } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const todo = await TodoList.findOne({ _id: id, householdId });
+    const todo = TodoList.findById(id);
     
-    if (!todo) {
+    if (!todo || todo.householdId !== householdId) {
       return res.status(404).json({ message: 'Todo list not found' });
     }
 
-    todo.items.pull(itemId);
-    await todo.save();
-
-    const updatedTodo = await TodoList.findById(id)
-      .populate('owner', 'displayName username')
-      .populate('sharedWith', 'displayName username');
+    const updatedTodo = TodoList.deleteItem(id, itemId);
 
     res.json(updatedTodo);
   } catch (error) {
@@ -184,11 +157,13 @@ const deleteTodoList = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const todo = await TodoList.findOneAndDelete({ _id: id, householdId });
+    const todo = TodoList.findById(id);
     
-    if (!todo) {
+    if (!todo || todo.householdId !== householdId) {
       return res.status(404).json({ message: 'Todo list not found' });
     }
+
+    TodoList.findByIdAndDelete(id);
 
     res.json({ message: 'Todo list deleted' });
   } catch (error) {

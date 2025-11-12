@@ -11,9 +11,7 @@ const getHouseholdId = (user) => {
 const getReminders = async (req, res) => {
   try {
     const householdId = getHouseholdId(req.user);
-    const reminders = await Reminder.find({ householdId })
-      .populate('createdBy', 'displayName username')
-      .sort({ reminderDate: 1 });
+    const reminders = Reminder.find({ householdId });
     
     res.json(reminders);
   } catch (error) {
@@ -30,7 +28,7 @@ const createReminder = async (req, res) => {
     const householdId = getHouseholdId(req.user);
     const { title, description, category, reminderDate, isRecurring, recurrencePattern, notifyBoth, priority } = req.body;
 
-    const reminder = await Reminder.create({
+    const reminder = Reminder.create({
       householdId,
       title,
       description,
@@ -43,10 +41,7 @@ const createReminder = async (req, res) => {
       createdBy: req.user._id
     });
 
-    const populatedReminder = await Reminder.findById(reminder._id)
-      .populate('createdBy', 'displayName username');
-
-    res.status(201).json(populatedReminder);
+    res.status(201).json(reminder);
   } catch (error) {
     console.error('Create reminder error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -61,9 +56,9 @@ const updateReminder = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const reminder = await Reminder.findOne({ _id: id, householdId });
+    const reminder = Reminder.findById(id);
     
-    if (!reminder) {
+    if (!reminder || reminder.householdId !== householdId) {
       return res.status(404).json({ message: 'Reminder not found' });
     }
 
@@ -74,8 +69,7 @@ const updateReminder = async (req, res) => {
       updateData.completedAt = new Date();
     }
 
-    const updatedReminder = await Reminder.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('createdBy', 'displayName username');
+    const updatedReminder = Reminder.findByIdAndUpdate(id, updateData);
 
     res.json(updatedReminder);
   } catch (error) {
@@ -92,11 +86,13 @@ const deleteReminder = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const reminder = await Reminder.findOneAndDelete({ _id: id, householdId });
+    const reminder = Reminder.findById(id);
     
-    if (!reminder) {
+    if (!reminder || reminder.householdId !== householdId) {
       return res.status(404).json({ message: 'Reminder not found' });
     }
+
+    Reminder.findByIdAndDelete(id);
 
     res.json({ message: 'Reminder deleted' });
   } catch (error) {
