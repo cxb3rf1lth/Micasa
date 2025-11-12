@@ -19,6 +19,11 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
 
+      // Verify user data integrity before destructuring
+      if (!user.password) {
+        return res.status(401).json({ message: 'Invalid user data' });
+      }
+
       // Remove password from user object
       const { password, ...userWithoutPassword } = user;
       req.user = userWithoutPassword;

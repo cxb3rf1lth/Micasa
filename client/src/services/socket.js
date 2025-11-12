@@ -7,18 +7,29 @@ class SocketService {
     this.socket = null;
   }
 
-  connect() {
+  connect(token) {
     if (!this.socket) {
       this.socket = io(SOCKET_URL, {
         transports: ['websocket'],
+        auth: {
+          token: token || localStorage.getItem('token')
+        }
       });
 
       this.socket.on('connect', () => {
         console.log('Socket connected:', this.socket.id);
       });
 
+      this.socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error.message);
+      });
+
       this.socket.on('disconnect', () => {
         console.log('Socket disconnected');
+      });
+
+      this.socket.on('error', (error) => {
+        console.error('Socket error:', error.message);
       });
     }
     return this.socket;

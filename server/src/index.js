@@ -1,10 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
 const http = require('http');
 const socketio = require('socket.io');
+const jwt = require('jsonwebtoken');
 const { connectDB } = require('./config/database');
 const { apiLimiter, authLimiter, staticLimiter } = require('./middleware/rateLimiter');
+const User = require('./models/User');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,10 +22,33 @@ const io = socketio(server, {
 // Connect to database
 connectDB();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", process.env.CLIENT_URL || 'http://localhost:3000']
+    },
+  },
+  crossOriginEmbedderPolicy: false
+}));
+app.use(compression());
+
+// CORS middleware
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Body parsers with size limits
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Apply rate limiting to all API routes
 app.use('/api/', apiLimiter);
@@ -41,11 +68,51 @@ app.use('/api/webhooks', require('./routes/webhooks'));
 // Make io accessible in routes
 app.set('io', io);
 
+// Socket.IO authentication middleware
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+      return next(new Error('Authentication error: No token provided'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = User.findById(decoded.id);
+
+    if (!user) {
+      return next(new Error('Authentication error: User not found'));
+    }
+
+    // Attach user to socket
+    socket.user = user;
+    next();
+  } catch (error) {
+    console.error('Socket authentication error:', error);
+    next(new Error('Authentication error: Invalid token'));
+  }
+});
+
+// Helper function to get household ID
+const getHouseholdId = (user) => {
+  return user.partnerId
+    ? [user.id.toString(), user.partnerId.toString()].sort().join('-')
+    : `household_${user.id}`;
+};
+
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+  console.log('New client connected:', socket.id, 'User:', socket.user.displayName);
 
   socket.on('join-household', (householdId) => {
+    // Verify user owns this household
+    const userHouseholdId = getHouseholdId(socket.user);
+
+    if (householdId !== userHouseholdId) {
+      console.log(`Socket ${socket.id} attempted to join unauthorized household ${householdId}`);
+      socket.emit('error', { message: 'Unauthorized household access' });
+      return;
+    }
+
     socket.join(householdId);
     console.log(`Socket ${socket.id} joined household ${householdId}`);
   });
