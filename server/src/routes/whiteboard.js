@@ -7,12 +7,13 @@ const {
   updateWhiteboardNote,
   deleteWhiteboardNote
 } = require('../controllers/whiteboardController');
+const { validateWhiteboardItem, validateId } = require('../middleware/validation');
 
 router.use(protect);
 
 router.get('/', getWhiteboardNotes);
-router.post('/', createWhiteboardNote);
-router.put('/:id', updateWhiteboardNote);
-router.delete('/:id', deleteWhiteboardNote);
+router.post('/', validateWhiteboardItem, createWhiteboardNote);
+router.put('/:id', validateId, validateWhiteboardItem, updateWhiteboardNote);
+router.delete('/:id', validateId, deleteWhiteboardNote);
 
 module.exports = router;

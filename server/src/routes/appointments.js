@@ -7,13 +7,14 @@ const {
   deleteAppointment
 } = require('../controllers/appointmentController');
 const { protect } = require('../middleware/auth');
+const { validateAppointment, validateId } = require('../middleware/validation');
 
 router.route('/')
   .get(protect, getAppointments)
-  .post(protect, createAppointment);
+  .post(protect, validateAppointment, createAppointment);
 
 router.route('/:id')
-  .put(protect, updateAppointment)
-  .delete(protect, deleteAppointment);
+  .put(protect, validateId, validateAppointment, updateAppointment)
+  .delete(protect, validateId, deleteAppointment);
 
 module.exports = router;

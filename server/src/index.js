@@ -37,6 +37,7 @@ app.use('/api/whiteboard', require('./routes/whiteboard'));
 app.use('/api/vision-board', require('./routes/visionBoard'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/webhooks', require('./routes/webhooks'));
+app.use('/api/budgets', require('./routes/budget'));
 
 // Make io accessible in routes
 app.set('io', io);
@@ -80,6 +81,10 @@ io.on('connection', (socket) => {
 
   socket.on('message-received', (data) => {
     socket.to(data.householdId).emit('message-received', data);
+  });
+
+  socket.on('budget-updated', (data) => {
+    socket.to(data.householdId).emit('budget-updated', data);
   });
 
   socket.on('disconnect', () => {

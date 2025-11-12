@@ -7,12 +7,13 @@ const {
   updateWebhook,
   deleteWebhook
 } = require('../controllers/webhookController');
+const { validateWebhook, validateId } = require('../middleware/validation');
 
 router.use(protect);
 
 router.get('/', getWebhooks);
-router.post('/', createWebhook);
-router.put('/:id', updateWebhook);
-router.delete('/:id', deleteWebhook);
+router.post('/', validateWebhook, createWebhook);
+router.put('/:id', validateId, validateWebhook, updateWebhook);
+router.delete('/:id', validateId, deleteWebhook);
 
 module.exports = router;

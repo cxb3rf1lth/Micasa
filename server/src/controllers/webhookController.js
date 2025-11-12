@@ -3,8 +3,11 @@ const Webhook = require('../models/Webhook');
 const getWebhooks = async (req, res) => {
   try {
     const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const partnerId = req.user.partnerId;
+    const householdId = partnerId
+      ? [userId, partnerId].sort().join('-')
+      : `household_${userId}`;
+
     const webhooks = Webhook.findByHousehold(householdId);
     res.json(webhooks);
   } catch (error) {
@@ -16,15 +19,18 @@ const getWebhooks = async (req, res) => {
 const createWebhook = async (req, res) => {
   try {
     const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const partnerId = req.user.partnerId;
+    const householdId = partnerId
+      ? [userId, partnerId].sort().join('-')
+      : `household_${userId}`;
+
     const webhookData = {
       ...req.body,
       householdId,
       createdBy: userId
     };
-    
-    const webhook = await Webhook.create(webhookData);
+
+    const webhook = Webhook.create(webhookData);
     res.status(201).json(webhook);
   } catch (error) {
     console.error('Error creating webhook:', error);
