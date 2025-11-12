@@ -47,4 +47,38 @@ export const remindersAPI = {
   delete: (id) => api.delete(`/reminders/${id}`),
 };
 
+// Whiteboard API
+export const whiteboardAPI = {
+  getAll: () => api.get('/whiteboard'),
+  create: (data) => api.post('/whiteboard', data),
+  update: (id, data) => api.put(`/whiteboard/${id}`, data),
+  delete: (id) => api.delete(`/whiteboard/${id}`),
+};
+
+// Vision Board API
+export const visionBoardAPI = {
+  getAll: () => api.get('/vision-board'),
+  create: (data) => api.post('/vision-board', data),
+  update: (id, data) => api.put(`/vision-board/${id}`, data),
+  delete: (id) => api.delete(`/vision-board/${id}`),
+};
+
+// Messages API
+export const messagesAPI = {
+  getAll: () => api.get('/messages'),
+  getConversation: (partnerId) => api.get(`/messages/conversation/${partnerId}`),
+  getUnreadCount: () => api.get('/messages/unread-count'),
+  create: (data) => api.post('/messages', data),
+  markAsRead: (id) => api.put(`/messages/${id}/read`),
+  delete: (id) => api.delete(`/messages/${id}`),
+};
+
+// Webhooks API
+export const webhooksAPI = {
+  getAll: () => api.get('/webhooks'),
+  create: (data) => api.post('/webhooks', data),
+  update: (id, data) => api.put(`/webhooks/${id}`, data),
+  delete: (id) => api.delete(`/webhooks/${id}`),
+};
+
 export default api;
