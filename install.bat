@@ -1,18 +1,18 @@
 @echo off
-REM Micasa Quick Start Script for Windows
-REM This script helps you set up Micasa quickly
+REM Micasa Automated Installation Script for Windows
+REM This script fully automates the setup of Micasa with SQLite database
 
 echo.
-echo ========================================
-echo   Welcome to Micasa Setup!
-echo ========================================
+echo ==========================================
+echo   Micasa Installation
+echo ==========================================
 echo.
 
 REM Check if Node.js is installed
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Node.js is not installed. Please install Node.js v16 or higher.
-    echo         Download from: https://nodejs.org/
+    echo [ERROR] Node.js is not installed.
+    echo         Please install Node.js v16 or higher from: https://nodejs.org/
     pause
     exit /b 1
 )
@@ -24,7 +24,8 @@ echo.
 REM Check if npm is installed
 where npm >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] npm is not installed. Please install npm.
+    echo [ERROR] npm is not installed.
+    echo         Please install npm.
     pause
     exit /b 1
 )
@@ -35,10 +36,15 @@ echo.
 
 REM Install dependencies
 echo Installing dependencies...
+echo This may take a few minutes...
+echo.
+
 call npm run install:all
 
 if %ERRORLEVEL% NEQ 0 (
+    echo.
     echo [ERROR] Failed to install dependencies.
+    echo         Please check your internet connection and try again.
     pause
     exit /b 1
 )
@@ -47,10 +53,10 @@ echo.
 echo [OK] Dependencies installed successfully!
 echo.
 
-REM Check if .env file exists
+REM Create .env file
+echo Configuring environment...
+
 if not exist "server\.env" (
-    echo Creating .env file...
-    
     REM Generate JWT secret
     for /f "delims=" %%i in ('node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"') do set JWT_SECRET=%%i
     
@@ -76,10 +82,11 @@ echo [OK] Database directory created
 echo.
 
 REM Build the client
-echo Building client for production...
+echo Building client application...
 call npm run build
 
 if %ERRORLEVEL% NEQ 0 (
+    echo.
     echo [ERROR] Failed to build client.
     pause
     exit /b 1
@@ -88,30 +95,32 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo [OK] Client built successfully!
 echo.
-echo ========================================
-echo   Setup Complete!
-echo ========================================
+echo ==========================================
+echo   Installation Complete!
+echo ==========================================
+echo.
+echo Micasa is now ready to use!
 echo.
 echo Next Steps:
 echo.
 echo 1. Start the application:
-echo    - Development: npm run dev
-echo    - Production preview: npm run preview
+echo    Development mode:  npm run dev
+echo    Production mode:   npm run preview
 echo.
-echo 2. Open browser to http://localhost:3000
+echo 2. Open your browser:
+echo    http://localhost:3000
 echo.
 echo 3. Create your account and start managing your household!
 echo.
-echo Database Info:
-echo    - Uses SQLite (automatically created)
-echo    - Database location: server\data\micasa.db
-echo    - No external database setup required!
-echo.
 echo Documentation:
-echo    - README.md - Overview and quick start
-echo    - PRODUCTION_SETUP.md - Production setup guide
-echo    - DEPLOYMENT.md - Deployment instructions
-echo    - FEATURES.md - Feature documentation
+echo    - README.md - Overview and features
+echo    - FEATURES.md - Detailed feature guide
+echo    - DEPLOYMENT.md - Production deployment
+echo.
+echo Tips:
+echo    - The SQLite database is stored in: server\data\micasa.db
+echo    - No external database setup required!
+echo    - All data is stored locally and securely
 echo.
 echo Need help? Check the documentation or create an issue on GitHub!
 echo.

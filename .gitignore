@@ -41,3 +41,9 @@ coverage/
 tmp/
 temp/
 *.tmp
+
+# Database
+server/data/
+*.db
+*.db-shm
+*.db-wal

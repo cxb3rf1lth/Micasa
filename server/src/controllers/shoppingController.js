@@ -1,4 +1,5 @@
 const ShoppingNote = require('../models/ShoppingNote');
+const User = require('../models/User');
 
 // Helper function to get household ID
 const getHouseholdId = (user) => {
@@ -11,10 +12,7 @@ const getHouseholdId = (user) => {
 const getShoppingNotes = async (req, res) => {
   try {
     const householdId = getHouseholdId(req.user);
-    const notes = await ShoppingNote.find({ householdId })
-      .populate('createdBy', 'displayName username')
-      .populate('purchasedBy', 'displayName username')
-      .sort({ createdAt: -1 });
+    const notes = ShoppingNote.find({ householdId });
     
     res.json(notes);
   } catch (error) {
@@ -31,7 +29,7 @@ const createShoppingNote = async (req, res) => {
     const householdId = getHouseholdId(req.user);
     const { item, quantity, category, priority, notes } = req.body;
 
-    const shoppingNote = await ShoppingNote.create({
+    const shoppingNote = ShoppingNote.create({
       householdId,
       item,
       quantity,
@@ -41,10 +39,7 @@ const createShoppingNote = async (req, res) => {
       createdBy: req.user._id
     });
 
-    const populatedNote = await ShoppingNote.findById(shoppingNote._id)
-      .populate('createdBy', 'displayName username');
-
-    res.status(201).json(populatedNote);
+    res.status(201).json(shoppingNote);
   } catch (error) {
     console.error('Create shopping note error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -59,9 +54,9 @@ const updateShoppingNote = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const note = await ShoppingNote.findOne({ _id: id, householdId });
+    const note = ShoppingNote.findById(id);
     
-    if (!note) {
+    if (!note || note.householdId !== householdId) {
       return res.status(404).json({ message: 'Shopping note not found' });
     }
 
@@ -73,9 +68,7 @@ const updateShoppingNote = async (req, res) => {
       updateData.purchasedAt = new Date();
     }
 
-    const updatedNote = await ShoppingNote.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('createdBy', 'displayName username')
-      .populate('purchasedBy', 'displayName username');
+    const updatedNote = ShoppingNote.findByIdAndUpdate(id, updateData);
 
     res.json(updatedNote);
   } catch (error) {
@@ -92,11 +85,13 @@ const deleteShoppingNote = async (req, res) => {
     const { id } = req.params;
     const householdId = getHouseholdId(req.user);
     
-    const note = await ShoppingNote.findOneAndDelete({ _id: id, householdId });
+    const note = ShoppingNote.findById(id);
     
-    if (!note) {
+    if (!note || note.householdId !== householdId) {
       return res.status(404).json({ message: 'Shopping note not found' });
     }
+
+    ShoppingNote.findByIdAndDelete(id);
 
     res.json({ message: 'Shopping note deleted' });
   } catch (error) {

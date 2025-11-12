@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const socketio = require('socket.io');
-const connectDB = require('./config/database');
+const { connectDB } = require('./config/database');
 const { apiLimiter, authLimiter, staticLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
