@@ -8,8 +8,19 @@ const register = async (req, res) => {
   try {
     const { username, password, displayName } = req.body;
 
+    // Input validation
+    if (!username || !password || !displayName) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Sanitize username to prevent injection
+    const sanitizedUsername = username.trim().toLowerCase();
+    if (!/^[a-z0-9_-]+$/.test(sanitizedUsername)) {
+      return res.status(400).json({ message: 'Username can only contain letters, numbers, underscores, and hyphens' });
+    }
+
     // Check if user exists
-    const userExists = await User.findOne({ username });
+    const userExists = await User.findOne({ username: sanitizedUsername });
 
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
@@ -17,7 +28,7 @@ const register = async (req, res) => {
 
     // Create user
     const user = await User.create({
-      username,
+      username: sanitizedUsername,
       password,
       displayName
     });
@@ -46,8 +57,16 @@ const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // Input validation
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+
+    // Sanitize username
+    const sanitizedUsername = username.trim().toLowerCase();
+
     // Check for user
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: sanitizedUsername });
 
     if (user && (await user.comparePassword(password))) {
       res.json({
@@ -86,7 +105,15 @@ const linkPartner = async (req, res) => {
   try {
     const { partnerUsername } = req.body;
     
-    const partner = await User.findOne({ username: partnerUsername });
+    // Input validation
+    if (!partnerUsername) {
+      return res.status(400).json({ message: 'Partner username is required' });
+    }
+
+    // Sanitize partner username
+    const sanitizedPartnerUsername = partnerUsername.trim().toLowerCase();
+    
+    const partner = await User.findOne({ username: sanitizedPartnerUsername });
     
     if (!partner) {
       return res.status(404).json({ message: 'Partner not found' });
