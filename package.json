@@ -8,7 +8,9 @@
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
     "build": "cd client && npm run build",
-    "start": "cd server && npm start"
+    "start": "cd server && npm start",
+    "preview": "npm run build && concurrently \"npm run start\" \"npm run preview:client\"",
+    "preview:client": "cd client && npm run preview"
   },
   "keywords": ["household", "management", "shared", "family"],
   "author": "",
