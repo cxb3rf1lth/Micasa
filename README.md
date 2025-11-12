@@ -184,6 +184,37 @@ WebSocket events for real-time synchronization:
 - `todo-updated` - To-do list changes
 - `reminder-updated` - Reminder changes
 
+## 📚 Complete Documentation
+
+This repository includes comprehensive documentation:
+
+- **[README.md](./README.md)** (this file) - Overview and quick start
+- **[INSTALLATION.md](./INSTALLATION.md)** - Detailed installation instructions
+- **[FEATURES.md](./FEATURES.md)** - Complete feature guide and usage
+- **[PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)** - Production setup and local testing
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deploy to various platforms
+- **[VSCODE_TESTING.md](./VSCODE_TESTING.md)** - Test in VS Code terminal
+- **[PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md)** - Pre-launch checklist
+
+## 🚀 Quick Commands
+
+```bash
+# Install all dependencies
+npm run install:all
+
+# Development mode (hot reload)
+npm run dev
+
+# Build for production
+npm run build
+
+# Production preview
+npm run preview
+
+# Start production server
+npm start
+```
+
 ## 🤝 Contributing
 
 This is a personal project, but suggestions and feedback are welcome!
@@ -195,3 +226,7 @@ ISC
 ## 👥 Authors
 
 Built with ❤️ for household management
+
+---
+
+**Ready to deploy?** Check out [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md) to ensure you're production-ready!
