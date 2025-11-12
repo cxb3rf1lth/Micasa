@@ -8,6 +8,11 @@ import Chores from './pages/Chores';
 import Appointments from './pages/Appointments';
 import Todos from './pages/Todos';
 import Reminders from './pages/Reminders';
+import Whiteboard from './pages/Whiteboard';
+import VisionBoard from './pages/VisionBoard';
+import Messages from './pages/Messages';
+import Webhooks from './pages/Webhooks';
+import Settings from './pages/Settings';
 import Layout from './components/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -82,6 +87,11 @@ function AppRoutes() {
             <Route path="appointments" element={<Appointments />} />
             <Route path="todos" element={<Todos />} />
             <Route path="reminders" element={<Reminders />} />
+            <Route path="whiteboard" element={<Whiteboard />} />
+            <Route path="vision-board" element={<VisionBoard />} />
+            <Route path="messages" element={<Messages />} />
+            <Route path="webhooks" element={<Webhooks />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </AnimatePresence>

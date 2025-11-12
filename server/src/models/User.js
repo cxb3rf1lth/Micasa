@@ -2,15 +2,15 @@ const bcrypt = require('bcryptjs');
 const { getDB } = require('../config/database');
 
 class User {
-  static async create({ username, password, displayName, avatar = null, theme = 'dark-purple', notifications = true }) {
+  static async create({ username, password, displayName, avatar = null, theme = 'dark-purple', notifications = true, role = 'member' }) {
     const db = getDB();
     const hashedPassword = await bcrypt.hash(password, 10);
     const now = Date.now();
     
     const result = db.prepare(`
-      INSERT INTO users (username, password, displayName, avatar, theme, notifications, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(username.toLowerCase().trim(), hashedPassword, displayName, avatar, theme, notifications ? 1 : 0, now, now);
+      INSERT INTO users (username, password, displayName, avatar, theme, notifications, role, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(username.toLowerCase().trim(), hashedPassword, displayName, avatar, theme, notifications ? 1 : 0, role, now, now);
     
     return this.findById(result.lastInsertRowid);
   }
@@ -71,6 +71,7 @@ class User {
       displayName: user.displayName,
       partnerId: user.partnerId,
       avatar: user.avatar,
+      role: user.role || 'member',
       preferences: {
         theme: user.theme,
         notifications: user.notifications === 1

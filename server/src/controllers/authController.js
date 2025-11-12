@@ -104,6 +104,7 @@ const getMe = async (req, res) => {
       displayName: user.displayName,
       partnerId: partner ? partner._id : null,
       avatar: user.avatar,
+      role: user.role,
       preferences: user.preferences
     };
     
@@ -150,9 +151,35 @@ const linkPartner = async (req, res) => {
   }
 };
 
+// @desc    Update user role
+// @route   PUT /api/auth/update-role
+// @access  Private
+const updateRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    
+    // Validate role
+    const validRoles = ['husband', 'wife', 'partner', 'dependent', 'child', 'sibling', 'roommate', 'member'];
+    if (!role || !validRoles.includes(role.toLowerCase())) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+    
+    const user = User.findByIdAndUpdate(req.user._id, { role: role.toLowerCase() });
+    
+    res.json({ 
+      message: 'Role updated successfully',
+      role: user.role 
+    });
+  } catch (error) {
+    console.error('Update role error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
-  linkPartner
+  linkPartner,
+  updateRole
 };

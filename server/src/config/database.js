@@ -56,6 +56,7 @@ const initializeSchema = () => {
       avatar TEXT,
       theme TEXT DEFAULT 'dark-purple',
       notifications INTEGER DEFAULT 1,
+      role TEXT DEFAULT 'member',
       createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
       updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
       FOREIGN KEY (partnerId) REFERENCES users(id) ON DELETE SET NULL
@@ -210,6 +211,89 @@ const initializeSchema = () => {
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  // Whiteboard notes table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whiteboard_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      householdId TEXT NOT NULL,
+      content TEXT NOT NULL,
+      type TEXT DEFAULT 'note',
+      color TEXT DEFAULT '#9D8DF1',
+      fontSize INTEGER DEFAULT 16,
+      positionX REAL DEFAULT 0,
+      positionY REAL DEFAULT 0,
+      width REAL DEFAULT 200,
+      height REAL DEFAULT 150,
+      rotation REAL DEFAULT 0,
+      createdBy INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_whiteboard_household ON whiteboard_notes(householdId)`);
+
+  // Vision board items table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS vision_board_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      householdId TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      type TEXT DEFAULT 'goal',
+      imageUrl TEXT,
+      targetDate INTEGER,
+      status TEXT DEFAULT 'planning',
+      priority TEXT DEFAULT 'medium',
+      positionX REAL DEFAULT 0,
+      positionY REAL DEFAULT 0,
+      width REAL DEFAULT 250,
+      height REAL DEFAULT 200,
+      createdBy INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_vision_board_household ON vision_board_items(householdId)`);
+
+  // Messages table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      householdId TEXT NOT NULL,
+      senderId INTEGER NOT NULL,
+      recipientId INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      isRead INTEGER DEFAULT 0,
+      readAt INTEGER,
+      createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (recipientId) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_household ON messages(householdId, recipientId, isRead)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(senderId, recipientId, createdAt)`);
+
+  // Webhooks table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      householdId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL,
+      isActive INTEGER DEFAULT 1,
+      secret TEXT,
+      createdBy INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_webhooks_household ON webhooks(householdId, isActive)`);
 
   console.log('Database schema initialized');
 };
