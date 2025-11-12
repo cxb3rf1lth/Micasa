@@ -295,6 +295,71 @@ const initializeSchema = () => {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_webhooks_household ON webhooks(householdId, isActive)`);
 
+  // Budgets table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS budgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      householdId TEXT NOT NULL,
+      category TEXT NOT NULL,
+      amount REAL NOT NULL DEFAULT 0,
+      spent REAL NOT NULL DEFAULT 0,
+      period TEXT DEFAULT 'monthly',
+      startDate INTEGER NOT NULL,
+      endDate INTEGER,
+      createdBy INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_budgets_household ON budgets(householdId, period)`);
+
+  // Meal Plans table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meal_plans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      householdId TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      mealType TEXT DEFAULT 'dinner',
+      date INTEGER NOT NULL,
+      ingredients TEXT,
+      recipe TEXT,
+      prepTime INTEGER DEFAULT 30,
+      cookTime INTEGER DEFAULT 30,
+      servings INTEGER DEFAULT 2,
+      imageUrl TEXT,
+      createdBy INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_meal_plans_household ON meal_plans(householdId, date)`);
+
+  // Home Inventory table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      householdId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      category TEXT DEFAULT 'other',
+      location TEXT DEFAULT 'general',
+      quantity INTEGER DEFAULT 1,
+      brand TEXT,
+      purchaseDate INTEGER,
+      expiryDate INTEGER,
+      value REAL,
+      notes TEXT,
+      imageUrl TEXT,
+      createdBy INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_inventory_household ON inventory_items(householdId, category)`);
+
   console.log('Database schema initialized');
 };
 

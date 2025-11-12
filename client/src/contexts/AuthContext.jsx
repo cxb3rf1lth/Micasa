@@ -81,9 +81,9 @@ export const AuthProvider = ({ children }) => {
   const getHouseholdId = () => {
     if (!user) return null;
     if (user.partnerId) {
-      return [user._id, user.partnerId].sort().join('-');
+      return [user.id, user.partnerId].sort().join('-');
     }
-    return user._id;
+    return user.id;
   };
 
   const value = {

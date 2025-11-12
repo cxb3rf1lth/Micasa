@@ -7,13 +7,14 @@ const {
   deleteReminder
 } = require('../controllers/reminderController');
 const { protect } = require('../middleware/auth');
+const { validateReminder, validateId } = require('../middleware/validation');
 
 router.route('/')
   .get(protect, getReminders)
-  .post(protect, createReminder);
+  .post(protect, validateReminder, createReminder);
 
 router.route('/:id')
-  .put(protect, updateReminder)
-  .delete(protect, deleteReminder);
+  .put(protect, validateId, validateReminder, updateReminder)
+  .delete(protect, validateId, deleteReminder);
 
 module.exports = router;

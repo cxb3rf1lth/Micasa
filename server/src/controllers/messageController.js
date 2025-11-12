@@ -3,8 +3,11 @@ const Message = require('../models/Message');
 const getMessages = async (req, res) => {
   try {
     const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const partnerId = req.user.partnerId;
+    const householdId = partnerId
+      ? [userId, partnerId].sort().join('-')
+      : `household_${userId}`;
+
     const messages = Message.findByHousehold(householdId, userId);
     res.json(messages);
   } catch (error) {
@@ -29,16 +32,19 @@ const getConversation = async (req, res) => {
 const createMessage = async (req, res) => {
   try {
     const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const partnerId = req.user.partnerId;
+    const householdId = partnerId
+      ? [userId, partnerId].sort().join('-')
+      : `household_${userId}`;
+
     const messageData = {
       householdId,
       senderId: userId,
       recipientId: req.body.recipientId,
       content: req.body.content
     };
-    
-    const message = await Message.create(messageData);
+
+    const message = Message.create(messageData);
     
     // Emit socket event for real-time update
     const io = req.app.get('io');

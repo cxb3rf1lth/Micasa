@@ -1,7 +1,7 @@
 const { getDB } = require('../config/database');
 
 class Message {
-  static async create(data) {
+  static create(data) {
     const db = getDB();
     const now = Date.now();
     

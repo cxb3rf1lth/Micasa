@@ -9,14 +9,15 @@ const {
   getUnreadCount,
   deleteMessage
 } = require('../controllers/messageController');
+const { validateMessage, validateId } = require('../middleware/validation');
 
 router.use(protect);
 
 router.get('/', getMessages);
 router.get('/unread-count', getUnreadCount);
-router.get('/conversation/:partnerId', getConversation);
-router.post('/', createMessage);
-router.put('/:id/read', markAsRead);
-router.delete('/:id', deleteMessage);
+router.get('/conversation/:partnerId', validateId, getConversation);
+router.post('/', validateMessage, createMessage);
+router.put('/:id/read', validateId, markAsRead);
+router.delete('/:id', validateId, deleteMessage);
 
 module.exports = router;

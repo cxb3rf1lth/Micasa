@@ -7,13 +7,14 @@ const {
   deleteShoppingNote
 } = require('../controllers/shoppingController');
 const { protect } = require('../middleware/auth');
+const { validateShoppingNote, validateId } = require('../middleware/validation');
 
 router.route('/')
   .get(protect, getShoppingNotes)
-  .post(protect, createShoppingNote);
+  .post(protect, validateShoppingNote, createShoppingNote);
 
 router.route('/:id')
-  .put(protect, updateShoppingNote)
-  .delete(protect, deleteShoppingNote);
+  .put(protect, validateId, validateShoppingNote, updateShoppingNote)
+  .delete(protect, validateId, deleteShoppingNote);
 
 module.exports = router;

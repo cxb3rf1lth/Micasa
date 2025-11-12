@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiShoppingCart, FiCalendar, FiCheckSquare, FiBell, FiClipboard, FiEdit, FiTarget, FiMessageSquare, FiWifi, FiSettings } from 'react-icons/fi';
+import { FiHome, FiShoppingCart, FiCalendar, FiCheckSquare, FiBell, FiClipboard, FiEdit, FiTarget, FiMessageSquare, FiWifi, FiDollarSign, FiSettings } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import '../styles/Sidebar.css';
 
@@ -10,6 +10,7 @@ const menuItems = [
   { path: '/appointments', icon: FiCalendar, label: 'Appointments' },
   { path: '/todos', icon: FiCheckSquare, label: 'To-Do Lists' },
   { path: '/reminders', icon: FiBell, label: 'Reminders' },
+  { path: '/budget', icon: FiDollarSign, label: 'Budget' },
   { path: '/whiteboard', icon: FiEdit, label: 'Whiteboard' },
   { path: '/vision-board', icon: FiTarget, label: 'Vision Board' },
   { path: '/messages', icon: FiMessageSquare, label: 'Messages' },
