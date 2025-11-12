@@ -40,7 +40,7 @@ A modern, real-time household management application designed for couples to col
 
 ### Backend
 - **Node.js** with Express
-- **MongoDB** with Mongoose ODM
+- **SQLite** with better-sqlite3 (local file-based database)
 - **Socket.IO** for WebSocket connections
 - **JWT** for authentication
 - **bcryptjs** for password hashing
@@ -49,9 +49,33 @@ A modern, real-time household management application designed for couples to col
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- MongoDB (local or cloud instance - MongoDB Atlas recommended)
+- **No database installation required!** Uses SQLite (automatically created)
 
 ### Quick Start
+
+**Option 1: Automated Installation (Recommended)**
+
+```bash
+# Clone the repository
+git clone https://github.com/cxb3rf1lth/Micasa.git
+cd Micasa
+
+# Run the install script
+# On Unix/Linux/Mac:
+./install.sh
+
+# On Windows:
+install.bat
+```
+
+The install script will:
+- Install all dependencies
+- Generate a secure JWT secret
+- Create the environment configuration
+- Initialize the SQLite database
+- Build the client application
+
+**Option 2: Manual Installation**
 
 1. **Clone the repository**
 ```bash
@@ -69,15 +93,10 @@ npm run install:all
 # Copy example environment file
 cp server/.env.example server/.env
 # Edit server/.env and update:
-# - MONGODB_URI (your MongoDB connection string)
 # - JWT_SECRET (generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
 ```
 
-4. **Set up MongoDB**
-   - **Option A:** Use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free cloud database - recommended)
-   - **Option B:** Install MongoDB locally (see [INSTALLATION.md](./INSTALLATION.md))
-
-5. **Run the application**
+4. **Run the application**
 
 Development mode (with hot reload):
 ```bash
@@ -92,6 +111,7 @@ npm run preview
 This will start:
 - Backend server on http://localhost:5000
 - Frontend on http://localhost:3000
+- SQLite database will be automatically created in `server/data/micasa.db`
 
 ### 📚 Detailed Guides
 

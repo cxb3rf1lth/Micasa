@@ -6,31 +6,8 @@ This guide will help you deploy Micasa to a production environment.
 
 Before deploying, ensure you have:
 - Node.js v16 or higher
-- MongoDB Atlas account (free tier available) or local MongoDB installation
 - A hosting platform (see options below)
-
-## Quick Start - MongoDB Atlas Setup
-
-1. **Create a MongoDB Atlas Account**
-   - Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-   - Sign up for a free account
-   - Create a new cluster (free tier is sufficient)
-
-2. **Configure Database Access**
-   - Go to "Database Access" in the left sidebar
-   - Add a new database user with username and password
-   - Remember these credentials for later
-
-3. **Configure Network Access**
-   - Go to "Network Access" in the left sidebar
-   - Add IP Address: Click "Allow Access from Anywhere" (0.0.0.0/0)
-   - For production, restrict to specific IPs
-
-4. **Get Connection String**
-   - Go to "Database" → Click "Connect" on your cluster
-   - Choose "Connect your application"
-   - Copy the connection string (looks like: `mongodb+srv://username:password@cluster.mongodb.net/micasa`)
-   - Replace `<password>` with your database user password
+- **No external database required** - Uses SQLite (file-based)
 
 ## Environment Configuration
 
@@ -40,7 +17,6 @@ Create `server/.env` with production settings:
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/micasa?retryWrites=true&w=majority
 JWT_SECRET=<generate-a-secure-secret-key>
 NODE_ENV=production
 CLIENT_URL=https://your-domain.com
@@ -51,9 +27,138 @@ CLIENT_URL=https://your-domain.com
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
+## Database in Production
+
+Micasa uses SQLite, a file-based database that requires no external setup:
+
+- **Automatic Creation**: Database file is created automatically on first run
+- **Location**: `server/data/micasa.db`
+- **Persistence**: Ensure the `server/data` directory persists across deployments
+- **Backups**: Simple - just backup the database file regularly
+
+### Important for Deployment Platforms
+
+Most cloud platforms use ephemeral filesystems. You need to:
+1. Use a persistent volume/disk for the `server/data` directory
+2. Set up regular backups of the database file
+3. Consider using a mounted volume or object storage
+
 ## Deployment Options
 
-### Option 1: Deploy to Heroku
+### Option 1: Deploy to VPS (Recommended for SQLite)
+
+**Best for**: Full control, persistent storage, SQLite databases
+
+1. **Provision a VPS**
+   - DigitalOcean, Linode, AWS EC2, or similar
+   - Minimum 1GB RAM, 20GB storage
+
+2. **Install Node.js**
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   ```
+
+3. **Clone and Setup**
+   ```bash
+   cd /var/www
+   git clone https://github.com/cxb3rf1lth/Micasa.git
+   cd Micasa
+   
+   # Run installation script
+   ./install.sh
+   
+   # Or manual setup
+   npm run install:all
+   cp server/.env.example server/.env
+   # Edit server/.env with your settings
+   npm run build
+   ```
+
+4. **Setup Process Manager (PM2)**
+   ```bash
+   sudo npm install -g pm2
+   cd /var/www/Micasa/server
+   pm2 start src/index.js --name micasa
+   pm2 startup
+   pm2 save
+   ```
+
+5. **Setup Nginx Reverse Proxy**
+   ```bash
+   sudo apt-get install nginx
+   ```
+
+   Create `/etc/nginx/sites-available/micasa`:
+   ```nginx
+   server {
+       listen 80;
+       server_name your-domain.com;
+
+       # Serve static files
+       location / {
+           root /var/www/Micasa/client/dist;
+           try_files $uri $uri/ /index.html;
+       }
+
+       # Proxy API requests
+       location /api {
+           proxy_pass http://localhost:5000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+
+       # WebSocket support
+       location /socket.io {
+           proxy_pass http://localhost:5000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+       }
+   }
+   ```
+
+   Enable the site:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/micasa /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+6. **Setup SSL with Let's Encrypt**
+   ```bash
+   sudo apt-get install certbot python3-certbot-nginx
+   sudo certbot --nginx -d your-domain.com
+   ```
+
+7. **Setup Automatic Backups**
+   ```bash
+   # Create backup script
+   cat > /home/micasa/backup.sh << 'BACKUP'
+   #!/bin/bash
+   BACKUP_DIR="/home/micasa/backups"
+   DB_FILE="/var/www/Micasa/server/data/micasa.db"
+   DATE=$(date +%Y%m%d_%H%M%S)
+   
+   mkdir -p $BACKUP_DIR
+   cp $DB_FILE $BACKUP_DIR/micasa_$DATE.db
+   
+   # Keep only last 30 days of backups
+   find $BACKUP_DIR -name "micasa_*.db" -mtime +30 -delete
+   BACKUP
+   
+   chmod +x /home/micasa/backup.sh
+   
+   # Add to crontab (daily at 2 AM)
+   (crontab -l 2>/dev/null; echo "0 2 * * * /home/micasa/backup.sh") | crontab -
+   ```
+
+### Option 2: Deploy to Heroku
+
+⚠️ **Note**: Heroku uses ephemeral filesystem. You'll need to use an add-on for persistent storage or migrate to PostgreSQL.
 
 1. **Install Heroku CLI**
    ```bash
@@ -72,13 +177,12 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 4. **Set Environment Variables**
    ```bash
-   heroku config:set MONGODB_URI="your-mongodb-uri"
    heroku config:set JWT_SECRET="your-jwt-secret"
    heroku config:set NODE_ENV=production
    heroku config:set CLIENT_URL="https://your-app-name.herokuapp.com"
    ```
 
-5. **Add Heroku Buildpack**
+5. **Add Buildpack**
    ```bash
    heroku buildpacks:set heroku/nodejs
    ```
@@ -88,7 +192,14 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
    git push heroku main
    ```
 
-### Option 2: Deploy to Render
+⚠️ **Important**: On Heroku, the SQLite database will reset with each deployment. Consider:
+- Using Heroku Postgres instead
+- Using a persistent storage add-on
+- Deploying to a VPS instead
+
+### Option 3: Deploy to Render
+
+Similar to Heroku, Render has ephemeral storage.
 
 1. **Create Render Account**
    - Go to [Render.com](https://render.com)
@@ -97,25 +208,19 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 2. **Create New Web Service**
    - Click "New +" → "Web Service"
    - Connect your GitHub repository
-   - Configure:
-     - **Name:** your-app-name
-     - **Region:** Choose closest to your users
-     - **Branch:** main
-     - **Build Command:** `npm run install:all && npm run build`
-     - **Start Command:** `npm start`
 
-3. **Set Environment Variables**
-   - Add the following environment variables in Render dashboard:
-     - `MONGODB_URI`
-     - `JWT_SECRET`
-     - `NODE_ENV=production`
-     - `CLIENT_URL` (will be provided by Render)
+3. **Configure Service**
+   - Name: `micasa`
+   - Build Command: `npm run install:all && npm run build`
+   - Start Command: `cd server && npm start`
+   - Add environment variables (JWT_SECRET, NODE_ENV, CLIENT_URL)
 
-4. **Deploy**
-   - Click "Create Web Service"
-   - Render will automatically deploy your app
+4. **Add Persistent Disk**
+   - In service settings, add a disk
+   - Mount path: `/opt/render/project/server/data`
+   - This ensures database persists
 
-### Option 3: Deploy to Railway
+### Option 4: Deploy to Railway
 
 1. **Create Railway Account**
    - Go to [Railway.app](https://railway.app)
@@ -126,237 +231,150 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
    - Select "Deploy from GitHub repo"
    - Choose your Micasa repository
 
-3. **Configure Environment Variables**
-   - Go to Variables tab
-   - Add:
-     - `MONGODB_URI`
-     - `JWT_SECRET`
-     - `NODE_ENV=production`
-     - `PORT=5000`
+3. **Configure**
+   - Railway will auto-detect Node.js
+   - Add environment variables in Settings
+   - Add persistent volume for `server/data`
 
-4. **Deploy**
-   - Railway automatically deploys on push to main branch
+## Database Backup Strategies
 
-### Option 4: VPS Deployment (DigitalOcean, AWS, etc.)
-
-1. **Set up VPS**
-   ```bash
-   # Update system
-   sudo apt update && sudo apt upgrade -y
-   
-   # Install Node.js
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-   sudo apt install -y nodejs
-   
-   # Install PM2 for process management
-   sudo npm install -g pm2
-   ```
-
-2. **Clone and Setup**
-   ```bash
-   # Clone repository
-   git clone https://github.com/cxb3rf1lth/Micasa.git
-   cd Micasa
-   
-   # Install dependencies
-   npm run install:all
-   
-   # Create .env file
-   nano server/.env
-   # Add production environment variables
-   
-   # Build client
-   npm run build
-   ```
-
-3. **Start with PM2**
-   ```bash
-   # Start server
-   cd server
-   pm2 start src/index.js --name micasa
-   
-   # Save PM2 configuration
-   pm2 save
-   
-   # Set PM2 to start on boot
-   pm2 startup
-   ```
-
-4. **Configure Nginx (Optional)**
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-       
-       location / {
-           proxy_pass http://localhost:5000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
-
-## Production Checklist
-
-Before going live:
-
-- [ ] Set up MongoDB Atlas or production database
-- [ ] Generate and set secure JWT_SECRET
-- [ ] Update CLIENT_URL to production domain
-- [ ] Set NODE_ENV=production
-- [ ] Build the client: `npm run build`
-- [ ] Test all features work correctly
-- [ ] Set up SSL/HTTPS certificate
-- [ ] Configure CORS for production domain
-- [ ] Set up monitoring and logging
-- [ ] Configure backup strategy for database
-- [ ] Review security settings
-
-## Testing the Deployment
-
-1. **Health Check**
-   ```bash
-   curl https://your-domain.com/api/health
-   ```
-
-2. **Create Test Account**
-   - Visit your deployed app
-   - Register a new user
-   - Test all features
-
-3. **Test Real-time Features**
-   - Open app in two different browsers
-   - Link accounts as partners
-   - Test that changes sync in real-time
-
-## Monitoring
-
-### Using PM2 (VPS deployment)
-
+### Manual Backup
 ```bash
-# View logs
+# Create backup
+cp server/data/micasa.db server/data/micasa-backup-$(date +%Y%m%d).db
+
+# Restore from backup
+cp server/data/micasa-backup-20240101.db server/data/micasa.db
+```
+
+### Automated Backup Script
+```bash
+#!/bin/bash
+# backup-db.sh
+BACKUP_DIR="$HOME/micasa-backups"
+DB_PATH="/path/to/Micasa/server/data/micasa.db"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+cp $DB_PATH $BACKUP_DIR/micasa_$DATE.db
+
+# Keep only last 30 backups
+ls -t $BACKUP_DIR/micasa_*.db | tail -n +31 | xargs rm -f
+```
+
+Add to crontab:
+```bash
+# Run daily at 2 AM
+0 2 * * * /path/to/backup-db.sh
+```
+
+## Post-Deployment Checklist
+
+- [ ] Application is accessible via domain/URL
+- [ ] HTTPS is enabled and working
+- [ ] Environment variables are set correctly
+- [ ] Database directory has proper permissions
+- [ ] Database file is being created successfully
+- [ ] User registration works
+- [ ] Login works
+- [ ] Data persists across server restarts
+- [ ] Backup strategy is in place
+- [ ] Monitoring is set up (optional but recommended)
+
+## Monitoring and Maintenance
+
+### Check Application Status
+```bash
+# If using PM2
+pm2 status
 pm2 logs micasa
 
-# Monitor resources
-pm2 monit
+# Check database size
+du -h server/data/micasa.db
 
-# Restart app
+# Check disk space
+df -h
+```
+
+### Update Application
+```bash
+cd /var/www/Micasa
+git pull
+npm run install:all
+npm run build
 pm2 restart micasa
 ```
 
-### Health Endpoint
+### Database Maintenance
 
-Monitor your app by checking:
+SQLite is low-maintenance, but you can optimize it:
+```bash
+# Vacuum database (reclaim space)
+sqlite3 server/data/micasa.db "VACUUM;"
+
+# Check integrity
+sqlite3 server/data/micasa.db "PRAGMA integrity_check;"
 ```
-GET https://your-domain.com/api/health
-```
+
+## Security Considerations
+
+1. **File Permissions**
+   ```bash
+   chmod 700 server/data
+   chmod 600 server/data/micasa.db
+   ```
+
+2. **Firewall**
+   ```bash
+   sudo ufw allow 80
+   sudo ufw allow 443
+   sudo ufw enable
+   ```
+
+3. **Regular Updates**
+   - Keep Node.js updated
+   - Update dependencies regularly: `npm audit fix`
+
+4. **Backup Encryption** (optional)
+   ```bash
+   # Encrypt backup
+   gpg --symmetric --cipher-algo AES256 micasa-backup.db
+   ```
 
 ## Troubleshooting
 
-### MongoDB Connection Issues
+### Database Lock Errors
+- SQLite uses file locking
+- Ensure only one process accesses the database
+- Check file permissions
 
-**Error:** `MongoServerError: Authentication failed`
-- Verify MONGODB_URI is correct
-- Check username and password
-- Ensure IP is whitelisted in MongoDB Atlas
-
-**Error:** `MongooseError: Can't call openUri() on an active connection`
-- Restart your server
-- Ensure only one instance is running
-
-### Build Errors
-
-**Error:** `ENOSPC: no space left on device`
-- Clear node_modules: `rm -rf node_modules client/node_modules server/node_modules`
-- Reinstall: `npm run install:all`
-
-### Port Issues
-
-**Error:** `EADDRINUSE: address already in use`
-- Change PORT in .env
-- Or kill existing process
-
-## Scaling Considerations
-
-For high traffic:
-
-1. **Database Optimization**
-   - Add indexes to frequently queried fields
-   - Use MongoDB Atlas auto-scaling
-   - Consider read replicas
-
-2. **Application Scaling**
-   - Use load balancer
-   - Deploy multiple instances
-   - Configure sticky sessions for Socket.IO
-
-3. **Caching**
-   - Implement Redis for session storage
-   - Cache frequently accessed data
-
-## Security Best Practices
-
-1. **Environment Variables**
-   - Never commit .env files
-   - Use environment variable management tools
-   - Rotate JWT secrets periodically
-
-2. **Database Security**
-   - Restrict MongoDB network access
-   - Use strong passwords
-   - Enable MongoDB authentication
-
-3. **Application Security**
-   - Keep dependencies updated
-   - Use HTTPS only
-   - Implement rate limiting (already included)
-   - Regular security audits
-
-## Updates and Maintenance
-
-### Updating the Application
-
+### Disk Space Issues
 ```bash
-# Pull latest changes
-git pull origin main
+# Check disk usage
+df -h
 
-# Install new dependencies
-npm run install:all
+# Check database size
+du -h server/data/
 
-# Rebuild client
-npm run build
-
-# Restart server (if using PM2)
-pm2 restart micasa
+# Clean old backups
+find backups/ -name "*.db" -mtime +30 -delete
 ```
 
-### Database Backups
+### Performance Issues
+- SQLite is fast for small to medium datasets
+- For heavy concurrent usage (>10 simultaneous users), consider PostgreSQL
+- Add indexes if queries are slow (already optimized in schema)
 
-**MongoDB Atlas:**
-- Automatic backups included in free tier
-- Configure backup schedule in Atlas dashboard
+## Migration from MongoDB
 
-**Self-hosted MongoDB:**
-```bash
-# Create backup
-mongodump --uri="mongodb://localhost:27017/micasa" --out=/backup/$(date +%Y%m%d)
+If you're migrating from a MongoDB version:
 
-# Restore backup
-mongorestore --uri="mongodb://localhost:27017/micasa" /backup/20240101/micasa
-```
+1. Export data from MongoDB
+2. Transform to SQLite format
+3. Import into new SQLite database
 
-## Support
-
-If you encounter issues:
-1. Check the logs for error messages
-2. Verify environment variables are set correctly
-3. Ensure database is accessible
-4. Check GitHub issues for similar problems
-5. Create a new issue with error details
+Contact support or create an issue for migration assistance.
 
 ---
 
-Happy deploying! 🚀
+Need help? Create an issue on GitHub or check the documentation!
