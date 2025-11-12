@@ -4,7 +4,7 @@ const cors = require('cors');
 const http = require('http');
 const socketio = require('socket.io');
 const connectDB = require('./config/database');
-const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, authLimiter, staticLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const server = http.createServer(app);
@@ -72,6 +72,17 @@ io.on('connection', (socket) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Micasa API is running' });
 });
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  const path = require('path');
+  app.use(express.static(path.join(__dirname, '../../client/dist')));
+  
+  // Apply rate limiting to SPA fallback route
+  app.get('*', staticLimiter, (req, res) => {
+    res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {

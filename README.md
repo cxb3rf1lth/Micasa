@@ -49,9 +49,9 @@ A modern, real-time household management application designed for couples to col
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- MongoDB (local or cloud instance)
+- MongoDB (local or cloud instance - MongoDB Atlas recommended)
 
-### Setup
+### Quick Start
 
 1. **Clone the repository**
 ```bash
@@ -66,18 +66,16 @@ npm run install:all
 
 3. **Configure environment variables**
 ```bash
-# Server environment (server/.env)
+# Copy example environment file
 cp server/.env.example server/.env
 # Edit server/.env and update:
 # - MONGODB_URI (your MongoDB connection string)
-# - JWT_SECRET (a secure random string)
+# - JWT_SECRET (generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
 ```
 
-4. **Start MongoDB**
-```bash
-# If using local MongoDB
-mongod
-```
+4. **Set up MongoDB**
+   - **Option A:** Use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free cloud database - recommended)
+   - **Option B:** Install MongoDB locally (see [INSTALLATION.md](./INSTALLATION.md))
 
 5. **Run the application**
 
@@ -86,9 +84,21 @@ Development mode (with hot reload):
 npm run dev
 ```
 
+Production preview:
+```bash
+npm run preview
+```
+
 This will start:
 - Backend server on http://localhost:5000
-- Frontend dev server on http://localhost:3000
+- Frontend on http://localhost:3000
+
+### 📚 Detailed Guides
+
+- **[INSTALLATION.md](./INSTALLATION.md)** - Complete installation instructions
+- **[PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)** - Production setup and VS Code testing
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deploy to Heroku, Render, Railway, or VPS
+- **[FEATURES.md](./FEATURES.md)** - Comprehensive feature guide
 
 ## 🚀 Usage
 
@@ -174,6 +184,37 @@ WebSocket events for real-time synchronization:
 - `todo-updated` - To-do list changes
 - `reminder-updated` - Reminder changes
 
+## 📚 Complete Documentation
+
+This repository includes comprehensive documentation:
+
+- **[README.md](./README.md)** (this file) - Overview and quick start
+- **[INSTALLATION.md](./INSTALLATION.md)** - Detailed installation instructions
+- **[FEATURES.md](./FEATURES.md)** - Complete feature guide and usage
+- **[PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)** - Production setup and local testing
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deploy to various platforms
+- **[VSCODE_TESTING.md](./VSCODE_TESTING.md)** - Test in VS Code terminal
+- **[PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md)** - Pre-launch checklist
+
+## 🚀 Quick Commands
+
+```bash
+# Install all dependencies
+npm run install:all
+
+# Development mode (hot reload)
+npm run dev
+
+# Build for production
+npm run build
+
+# Production preview
+npm run preview
+
+# Start production server
+npm start
+```
+
 ## 🤝 Contributing
 
 This is a personal project, but suggestions and feedback are welcome!
@@ -185,3 +226,7 @@ ISC
 ## 👥 Authors
 
 Built with ❤️ for household management
+
+---
+
+**Ready to deploy?** Check out [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md) to ensure you're production-ready!
