@@ -11,6 +11,13 @@ A modern, real-time household management application designed for couples to col
 - **To-Do Lists**: Create and manage shared or personal to-do lists
 - **Reminders**: Set reminders for bills, maintenance, and other important tasks
 
+### New Features
+- **Whiteboard**: Creative space for notes, ideas, and love letters with colorful sticky notes
+- **Vision Board**: Plan trips, set goals, and track dreams with an interactive board
+- **In-App Messaging**: Direct messaging between household members with real-time notifications
+- **Webhooks**: Configure external notifications and alerts for various household events
+- **Household Roles**: Customize your role (Husband, Wife, Partner, Child, etc.) in the household
+
 ### Key Highlights
 - 🔄 **Real-time Synchronization**: Changes sync instantly between partners using WebSocket
 - 🤝 **Shared Features**: All features support 2-way collaboration
@@ -161,6 +168,7 @@ Micasa/
 - `POST /api/auth/login` - Login user
 - `GET /api/auth/me` - Get current user
 - `PUT /api/auth/link-partner` - Link partner account
+- `PUT /api/auth/update-role` - Update household role
 
 ### Shopping
 - `GET /api/shopping` - Get all shopping items
@@ -195,6 +203,32 @@ Micasa/
 - `PUT /api/reminders/:id` - Update reminder
 - `DELETE /api/reminders/:id` - Delete reminder
 
+### Whiteboard
+- `GET /api/whiteboard` - Get all whiteboard notes
+- `POST /api/whiteboard` - Create whiteboard note
+- `PUT /api/whiteboard/:id` - Update whiteboard note
+- `DELETE /api/whiteboard/:id` - Delete whiteboard note
+
+### Vision Board
+- `GET /api/vision-board` - Get all vision board items
+- `POST /api/vision-board` - Create vision board item
+- `PUT /api/vision-board/:id` - Update vision board item
+- `DELETE /api/vision-board/:id` - Delete vision board item
+
+### Messages
+- `GET /api/messages` - Get all messages
+- `GET /api/messages/conversation/:partnerId` - Get conversation with partner
+- `GET /api/messages/unread-count` - Get unread message count
+- `POST /api/messages` - Send message
+- `PUT /api/messages/:id/read` - Mark message as read
+- `DELETE /api/messages/:id` - Delete message
+
+### Webhooks
+- `GET /api/webhooks` - Get all webhooks
+- `POST /api/webhooks` - Create webhook
+- `PUT /api/webhooks/:id` - Update webhook
+- `DELETE /api/webhooks/:id` - Delete webhook
+
 ## 🔄 Real-time Events
 
 WebSocket events for real-time synchronization:
@@ -203,6 +237,9 @@ WebSocket events for real-time synchronization:
 - `appointment-updated` - Appointment changes
 - `todo-updated` - To-do list changes
 - `reminder-updated` - Reminder changes
+- `whiteboard-updated` - Whiteboard note changes
+- `vision-board-updated` - Vision board item changes
+- `message-received` - New messages received
 
 ## 📚 Complete Documentation
 
