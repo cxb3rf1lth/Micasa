@@ -18,7 +18,7 @@ class TodoList {
       data.owner,
       data.category || 'household',
       data.priority || 'medium',
-      data.dueDate ? new Date(data.dueDate).getTime() : null,
+      data.dueDate ? (data.dueDate instanceof Date ? data.dueDate.getTime() : new Date(data.dueDate).getTime()) : null,
       data.color || '#9D8DF1',
       now,
       now
@@ -85,7 +85,11 @@ class TodoList {
           values.push(updates[key] ? 1 : 0);
         } else if (key === 'dueDate') {
           fields.push(`${key} = ?`);
-          values.push(updates[key] ? new Date(updates[key]).getTime() : null);
+          const val = updates[key];
+          values.push(val ? (val instanceof Date ? val.getTime() : new Date(val).getTime()) : null);
+        } else if (updates[key] instanceof Date) {
+          fields.push(`${key} = ?`);
+          values.push(updates[key].getTime());
         } else {
           fields.push(`${key} = ?`);
           values.push(updates[key]);
@@ -133,7 +137,7 @@ class TodoList {
       todoListId,
       itemData.text,
       itemData.isCompleted ? 1 : 0,
-      itemData.completedAt ? new Date(itemData.completedAt).getTime() : null,
+      itemData.completedAt ? (itemData.completedAt instanceof Date ? itemData.completedAt.getTime() : new Date(itemData.completedAt).getTime()) : null,
       now,
       now
     );
@@ -156,7 +160,11 @@ class TodoList {
           values.push(updates[key] ? 1 : 0);
         } else if (key === 'completedAt') {
           fields.push(`${key} = ?`);
-          values.push(updates[key] ? new Date(updates[key]).getTime() : null);
+          const val = updates[key];
+          values.push(val ? (val instanceof Date ? val.getTime() : new Date(val).getTime()) : null);
+        } else if (updates[key] instanceof Date) {
+          fields.push(`${key} = ?`);
+          values.push(updates[key].getTime());
         } else {
           fields.push(`${key} = ?`);
           values.push(updates[key]);

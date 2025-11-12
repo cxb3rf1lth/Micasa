@@ -65,7 +65,11 @@ class Reminder {
           values.push(updates[key] ? 1 : 0);
         } else if (key === 'reminderDate' || key === 'completedAt') {
           fields.push(`${key} = ?`);
-          values.push(updates[key] ? new Date(updates[key]).getTime() : null);
+          const val = updates[key];
+          values.push(val ? (val instanceof Date ? val.getTime() : new Date(val).getTime()) : null);
+        } else if (updates[key] instanceof Date) {
+          fields.push(`${key} = ?`);
+          values.push(updates[key].getTime());
         } else {
           fields.push(`${key} = ?`);
           values.push(updates[key]);

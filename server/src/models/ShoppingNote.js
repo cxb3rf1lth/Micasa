@@ -60,6 +60,12 @@ class ShoppingNote {
         if (key === 'isPurchased') {
           fields.push(`${key} = ?`);
           values.push(updates[key] ? 1 : 0);
+        } else if (key === 'purchasedAt' && updates[key] instanceof Date) {
+          fields.push(`${key} = ?`);
+          values.push(updates[key].getTime());
+        } else if (updates[key] instanceof Date) {
+          fields.push(`${key} = ?`);
+          values.push(updates[key].getTime());
         } else {
           fields.push(`${key} = ?`);
           values.push(updates[key]);

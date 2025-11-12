@@ -86,7 +86,11 @@ class Appointment {
           values.push(updates[key] ? 1 : 0);
         } else if (key === 'startTime' || key === 'endTime') {
           fields.push(`${key} = ?`);
-          values.push(new Date(updates[key]).getTime());
+          const val = updates[key];
+          values.push(val instanceof Date ? val.getTime() : new Date(val).getTime());
+        } else if (updates[key] instanceof Date) {
+          fields.push(`${key} = ?`);
+          values.push(updates[key].getTime());
         } else {
           fields.push(`${key} = ?`);
           values.push(updates[key]);
@@ -105,11 +109,13 @@ class Appointment {
       }
     }
     
-    fields.push('updatedAt = ?');
-    values.push(Date.now());
-    values.push(id);
-    
-    db.prepare(`UPDATE appointments SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    if (fields.length > 0) {
+      fields.push('updatedAt = ?');
+      values.push(Date.now());
+      values.push(id);
+      
+      db.prepare(`UPDATE appointments SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    }
     
     // Update attendees if provided
     if (updates.attendees) {
