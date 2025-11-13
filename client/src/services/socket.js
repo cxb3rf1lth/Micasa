@@ -7,10 +7,14 @@ class SocketService {
     this.socket = null;
   }
 
-  connect() {
+  connect(token) {
     if (!this.socket) {
+      // Pass authentication token to Socket.IO
       this.socket = io(SOCKET_URL, {
         transports: ['websocket'],
+        auth: {
+          token: token
+        }
       });
 
       this.socket.on('connect', () => {
@@ -19,6 +23,14 @@ class SocketService {
 
       this.socket.on('disconnect', () => {
         console.log('Socket disconnected');
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error.message);
+      });
+
+      this.socket.on('error', (error) => {
+        console.error('Socket error:', error);
       });
     }
     return this.socket;

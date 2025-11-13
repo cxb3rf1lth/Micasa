@@ -10,12 +10,16 @@ function Layout() {
   const { user, getHouseholdId } = useAuth();
 
   useEffect(() => {
-    // Connect to socket and join household room
-    const socket = socketService.connect();
-    const householdId = getHouseholdId();
-    
-    if (householdId) {
-      socketService.joinHousehold(householdId);
+    // Connect to socket with authentication token and join household room
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      const socket = socketService.connect(token);
+      const householdId = getHouseholdId();
+
+      if (householdId) {
+        socketService.joinHousehold(householdId);
+      }
     }
 
     return () => {
