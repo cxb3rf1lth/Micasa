@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const http = require('http');
 const socketio = require('socket.io');
 const { connectDB } = require('./config/database');
@@ -18,10 +19,16 @@ const io = socketio(server, {
 // Connect to database
 connectDB();
 
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+  crossOriginEmbedderPolicy: process.env.NODE_ENV === 'production'
+}));
+
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Add payload size limit
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Apply rate limiting to all API routes
 app.use('/api/', apiLimiter);
@@ -41,11 +48,49 @@ app.use('/api/webhooks', require('./routes/webhooks'));
 // Make io accessible in routes
 app.set('io', io);
 
+// Socket.IO authentication middleware
+const jwt = require('jsonwebtoken');
+const User = require('./models/User');
+
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return next(new Error('Authentication error: No token provided'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = User.findById(decoded.id);
+
+    if (!user) {
+      return next(new Error('Authentication error: User not found'));
+    }
+
+    socket.userId = user._id;
+    socket.user = user;
+    next();
+  } catch (error) {
+    console.error('Socket authentication error:', error);
+    next(new Error('Authentication error: Invalid token'));
+  }
+});
+
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+  console.log('New client connected:', socket.id, 'User:', socket.userId);
 
   socket.on('join-household', (householdId) => {
+    // Verify user belongs to this household
+    const userHouseholdId = socket.user.partnerId
+      ? [socket.userId.toString(), socket.user.partnerId.toString()].sort().join('-')
+      : socket.userId.toString();
+
+    if (householdId !== userHouseholdId) {
+      socket.emit('error', { message: 'Unauthorized: Cannot join this household' });
+      return;
+    }
+
     socket.join(householdId);
     console.log(`Socket ${socket.id} joined household ${householdId}`);
   });

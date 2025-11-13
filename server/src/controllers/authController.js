@@ -19,18 +19,38 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Username can only contain letters, numbers, underscores, and hyphens' });
     }
 
+    // Username length validation
+    if (sanitizedUsername.length < 3 || sanitizedUsername.length > 30) {
+      return res.status(400).json({ message: 'Username must be between 3 and 30 characters' });
+    }
+
+    // Password strength validation
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
+    // Check for password complexity (at least one number, one letter)
+    if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one letter and one number' });
+    }
+
+    // Display name validation
+    if (displayName.trim().length < 2 || displayName.trim().length > 50) {
+      return res.status(400).json({ message: 'Display name must be between 2 and 50 characters' });
+    }
+
     // Check if user exists
     const userExists = await User.findOne({ username: sanitizedUsername });
 
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'Username already taken' });
     }
 
     // Create user
     const user = await User.create({
       username: sanitizedUsername,
       password,
-      displayName
+      displayName: displayName.trim()
     });
 
     if (user) {
@@ -42,7 +62,7 @@ const register = async (req, res) => {
         token: generateToken(user._id)
       });
     } else {
-      res.status(400).json({ message: 'Invalid user data' });
+      res.status(400).json({ message: 'Registration failed. Please try again.' });
     }
   } catch (error) {
     console.error('Register error:', error);
