@@ -1,103 +1,93 @@
 const WhiteboardNote = require('../models/WhiteboardNote');
+const { getHouseholdId, verifyHouseholdAccess, sendError, emitSocketEvent } = require('../utils/controllerHelpers');
 
+// Custom implementation for whiteboard since it uses different method names
 const getWhiteboardNotes = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const householdId = getHouseholdId(req.user);
     const notes = WhiteboardNote.findByHousehold(householdId);
     res.json(notes);
   } catch (error) {
-    console.error('Error fetching whiteboard notes:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 
 const createWhiteboardNote = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const householdId = getHouseholdId(req.user);
+
     const noteData = {
       ...req.body,
       householdId,
-      createdBy: userId
+      createdBy: req.user._id
     };
-    
+
     const note = await WhiteboardNote.create(noteData);
-    
-    // Emit socket event for real-time update
-    const io = req.app.get('io');
-    if (io) {
-      io.to(householdId).emit('whiteboard-updated', { 
-        action: 'create', 
-        note,
-        householdId 
-      });
-    }
-    
+
+    emitSocketEvent(req, householdId, 'whiteboard-updated', {
+      action: 'create',
+      note
+    });
+
     res.status(201).json(note);
   } catch (error) {
-    console.error('Error creating whiteboard note:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 
 const updateWhiteboardNote = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const householdId = `household_${userId}`;
+    const householdId = getHouseholdId(req.user);
     const { id } = req.params;
-    
+
+    // Verify note belongs to household
+    const existingNote = WhiteboardNote.findById(id);
+    if (!verifyHouseholdAccess(existingNote, householdId)) {
+      return sendError(res, 404, 'Note not found');
+    }
+
     const note = WhiteboardNote.update(id, req.body);
-    
+
     if (!note) {
-      return res.status(404).json({ message: 'Note not found' });
+      return sendError(res, 404, 'Note not found');
     }
-    
-    // Emit socket event for real-time update
-    const io = req.app.get('io');
-    if (io) {
-      io.to(householdId).emit('whiteboard-updated', { 
-        action: 'update', 
-        note,
-        householdId 
-      });
-    }
-    
+
+    emitSocketEvent(req, householdId, 'whiteboard-updated', {
+      action: 'update',
+      note
+    });
+
     res.json(note);
   } catch (error) {
-    console.error('Error updating whiteboard note:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 
 const deleteWhiteboardNote = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const householdId = `household_${userId}`;
+    const householdId = getHouseholdId(req.user);
     const { id } = req.params;
-    
+
+    // Verify note belongs to household
+    const existingNote = WhiteboardNote.findById(id);
+    if (!verifyHouseholdAccess(existingNote, householdId)) {
+      return sendError(res, 404, 'Note not found');
+    }
+
     const deleted = WhiteboardNote.delete(id);
-    
+
     if (!deleted) {
-      return res.status(404).json({ message: 'Note not found' });
+      return sendError(res, 404, 'Note not found');
     }
-    
-    // Emit socket event for real-time update
-    const io = req.app.get('io');
-    if (io) {
-      io.to(householdId).emit('whiteboard-updated', { 
-        action: 'delete', 
-        id,
-        householdId 
-      });
-    }
-    
+
+    emitSocketEvent(req, householdId, 'whiteboard-updated', {
+      action: 'delete',
+      id
+    });
+
     res.json({ message: 'Note deleted successfully' });
   } catch (error) {
-    console.error('Error deleting whiteboard note:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 

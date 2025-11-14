@@ -7,13 +7,14 @@ const {
   deleteChore
 } = require('../controllers/choreController');
 const { protect } = require('../middleware/auth');
+const { validators, validate } = require('../middleware/validators');
 
 router.route('/')
   .get(protect, getChores)
-  .post(protect, createChore);
+  .post(protect, validators.chore, validate, createChore);
 
 router.route('/:id')
-  .put(protect, updateChore)
-  .delete(protect, deleteChore);
+  .put(protect, validators.id, validate, updateChore)
+  .delete(protect, validators.id, validate, deleteChore);
 
 module.exports = router;
