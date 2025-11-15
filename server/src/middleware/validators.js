@@ -165,7 +165,58 @@ const validators = {
       .optional()
       .isISO8601()
       .withMessage('Invalid target date format')
-  ]
+  ],
+
+  // Webhook validation
+  webhook: [
+    body('name')
+      .trim()
+      .notEmpty()
+      .withMessage('Webhook name is required')
+      .isLength({ max: 100 })
+      .withMessage('Webhook name must be less than 100 characters'),
+    body('url')
+      .notEmpty()
+      .withMessage('Webhook URL is required')
+      .isURL({ require_protocol: true })
+      .withMessage('Invalid URL format')
+      .custom((url) => {
+        if (process.env.NODE_ENV === 'production' && !url.startsWith('https://')) {
+          throw new Error('Webhook URL must use HTTPS in production');
+        }
+        return true;
+      }),
+    body('events')
+      .isArray({ min: 1 })
+      .withMessage('At least one event must be selected'),
+    body('events.*')
+      .isIn(['shopping', 'chore', 'appointment', 'todo', 'reminder', 'message', 'whiteboard', 'vision-board', '*'])
+      .withMessage('Invalid event type'),
+    body('secret')
+      .optional()
+      .isLength({ min: 8, max: 100 })
+      .withMessage('Secret must be between 8 and 100 characters')
+  ],
+
+  // Todo item validation
+  todoItem: [
+    body('text')
+      .trim()
+      .notEmpty()
+      .withMessage('Todo item text is required')
+      .isLength({ max: 500 })
+      .withMessage('Todo item must be less than 500 characters')
+  ],
+
+  // Parameter validation for conversation partner ID
+  partnerId: param('partnerId')
+    .isInt({ min: 1 })
+    .withMessage('Partner ID must be a positive integer'),
+
+  // Parameter validation for item ID (used in nested routes)
+  itemId: param('itemId')
+    .isInt({ min: 1 })
+    .withMessage('Item ID must be a positive integer')
 };
 
 module.exports = {
