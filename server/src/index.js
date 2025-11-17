@@ -6,6 +6,8 @@ const http = require('http');
 const socketio = require('socket.io');
 const { connectDB } = require('./config/database');
 const { apiLimiter, authLimiter, staticLimiter } = require('./middleware/rateLimiter');
+const logger = require('./config/logger');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +36,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api/', apiLimiter);
 
 // Routes
+app.use('/api/health', require('./routes/health'));
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/shopping', require('./routes/shopping'));
 app.use('/api/chores', require('./routes/chores'));
@@ -61,7 +64,7 @@ io.use(async (socket, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = User.findById(decoded.id);
+    const user = await User.findById(decoded.id); // FIXED: Added await
 
     if (!user) {
       return next(new Error('Authentication error: User not found'));
@@ -71,14 +74,21 @@ io.use(async (socket, next) => {
     socket.user = user;
     next();
   } catch (error) {
-    console.error('Socket authentication error:', error);
+    logger.error('Socket authentication error:', {
+      error: error.message,
+      stack: error.stack,
+      socketId: socket.id
+    });
     next(new Error('Authentication error: Invalid token'));
   }
 });
 
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id, 'User:', socket.userId);
+  logger.info('New client connected', {
+    socketId: socket.id,
+    userId: socket.userId
+  });
 
   socket.on('join-household', (householdId) => {
     // Verify user belongs to this household
@@ -92,7 +102,10 @@ io.on('connection', (socket) => {
     }
 
     socket.join(householdId);
-    console.log(`Socket ${socket.id} joined household ${householdId}`);
+    logger.info('Socket joined household', {
+      socketId: socket.id,
+      householdId
+    });
   });
 
   socket.on('shopping-updated', (data) => {
@@ -128,13 +141,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    logger.info('Client disconnected', {
+      socketId: socket.id,
+      userId: socket.userId
+    });
   });
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Micasa API is running' });
 });
 
 // Serve static files in production
@@ -148,19 +159,17 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
-});
+// Global error handling middleware (must be last)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`🏠 Micasa Server started`, {
+    port: PORT,
+    nodeEnv: process.env.NODE_ENV || 'development',
+    clientUrl: process.env.CLIENT_URL || 'http://localhost:3000'
+  });
 });
 
 module.exports = { app, io };
