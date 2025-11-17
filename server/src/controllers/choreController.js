@@ -1,109 +1,27 @@
 const Chore = require('../models/Chore');
+const { createCRUDController } = require('../utils/crudControllerFactory');
 
-// Helper function to get household ID
-const getHouseholdId = (user) => {
-  return user.partnerId ? [user._id.toString(), user.partnerId.toString()].sort().join('-') : user._id.toString();
-};
-
-// @desc    Get all chores
-// @route   GET /api/chores
-// @access  Private
-const getChores = async (req, res) => {
-  try {
-    const householdId = getHouseholdId(req.user);
-    const chores = Chore.find({ householdId });
-    
-    res.json(chores);
-  } catch (error) {
-    console.error('Get chores error:', error);
-    res.status(500).json({ message: 'Server error' });
+// Hook to handle completion tracking
+const beforeUpdate = (updateData, req, existingChore) => {
+  // If marking as completed
+  if (updateData.isCompleted && !existingChore.isCompleted) {
+    updateData.completedBy = req.user._id;
+    updateData.completedAt = new Date();
   }
+  return updateData;
 };
 
-// @desc    Create chore
-// @route   POST /api/chores
-// @access  Private
-const createChore = async (req, res) => {
-  try {
-    const householdId = getHouseholdId(req.user);
-    const { title, description, assignedTo, frequency, dueDate, priority, category, estimatedTime } = req.body;
+// Create CRUD operations using the factory
+const crudController = createCRUDController(Chore, {
+  resourceName: 'Chore',
+  socketEvent: 'chore',
+  beforeUpdate
+});
 
-    const chore = Chore.create({
-      householdId,
-      title,
-      description,
-      assignedTo,
-      frequency,
-      dueDate,
-      priority,
-      category,
-      estimatedTime
-    });
-
-    res.status(201).json(chore);
-  } catch (error) {
-    console.error('Create chore error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// @desc    Update chore
-// @route   PUT /api/chores/:id
-// @access  Private
-const updateChore = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const householdId = getHouseholdId(req.user);
-    
-    const chore = Chore.findById(id);
-    
-    if (!chore || chore.householdId !== householdId) {
-      return res.status(404).json({ message: 'Chore not found' });
-    }
-
-    const updateData = { ...req.body };
-    
-    // If marking as completed
-    if (req.body.isCompleted && !chore.isCompleted) {
-      updateData.completedBy = req.user._id;
-      updateData.completedAt = new Date();
-    }
-
-    const updatedChore = Chore.findByIdAndUpdate(id, updateData);
-
-    res.json(updatedChore);
-  } catch (error) {
-    console.error('Update chore error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// @desc    Delete chore
-// @route   DELETE /api/chores/:id
-// @access  Private
-const deleteChore = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const householdId = getHouseholdId(req.user);
-    
-    const chore = Chore.findById(id);
-    
-    if (!chore || chore.householdId !== householdId) {
-      return res.status(404).json({ message: 'Chore not found' });
-    }
-
-    Chore.findByIdAndDelete(id);
-
-    res.json({ message: 'Chore deleted' });
-  } catch (error) {
-    console.error('Delete chore error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
+// Export with original naming for backward compatibility
 module.exports = {
-  getChores,
-  createChore,
-  updateChore,
-  deleteChore
+  getChores: crudController.getAll,
+  createChore: crudController.create,
+  updateChore: crudController.update,
+  deleteChore: crudController.remove
 };

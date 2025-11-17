@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+*/node_modules
+
+# Build outputs
+client/dist
+client/build
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Tests
+**/*.test.js
+**/__tests__
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database (local development only)
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+
+# Logs
+logs/
+*.log
+server/logs/
+
+# Temporary files
+tmp/
+temp/

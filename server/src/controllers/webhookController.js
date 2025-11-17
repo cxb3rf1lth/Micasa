@@ -1,68 +1,76 @@
 const Webhook = require('../models/Webhook');
+const { getHouseholdId, verifyHouseholdAccess, sendError } = require('../utils/controllerHelpers');
 
 const getWebhooks = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const householdId = getHouseholdId(req.user);
     const webhooks = Webhook.findByHousehold(householdId);
     res.json(webhooks);
   } catch (error) {
-    console.error('Error fetching webhooks:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 
 const createWebhook = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const householdId = `household_${userId}`;
-    
+    const householdId = getHouseholdId(req.user);
+
     const webhookData = {
       ...req.body,
       householdId,
-      createdBy: userId
+      createdBy: req.user._id
     };
-    
+
     const webhook = await Webhook.create(webhookData);
     res.status(201).json(webhook);
   } catch (error) {
-    console.error('Error creating webhook:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 
 const updateWebhook = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const webhook = Webhook.update(id, req.body);
-    
-    if (!webhook) {
-      return res.status(404).json({ message: 'Webhook not found' });
+    const householdId = getHouseholdId(req.user);
+
+    // Verify webhook belongs to household
+    const existingWebhook = Webhook.findById(id);
+    if (!verifyHouseholdAccess(existingWebhook, householdId)) {
+      return sendError(res, 404, 'Webhook not found');
     }
-    
+
+    const webhook = Webhook.update(id, req.body);
+
+    if (!webhook) {
+      return sendError(res, 404, 'Webhook not found');
+    }
+
     res.json(webhook);
   } catch (error) {
-    console.error('Error updating webhook:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 
 const deleteWebhook = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const deleted = Webhook.delete(id);
-    
-    if (!deleted) {
-      return res.status(404).json({ message: 'Webhook not found' });
+    const householdId = getHouseholdId(req.user);
+
+    // Verify webhook belongs to household
+    const existingWebhook = Webhook.findById(id);
+    if (!verifyHouseholdAccess(existingWebhook, householdId)) {
+      return sendError(res, 404, 'Webhook not found');
     }
-    
+
+    const deleted = Webhook.delete(id);
+
+    if (!deleted) {
+      return sendError(res, 404, 'Webhook not found');
+    }
+
     res.json({ message: 'Webhook deleted successfully' });
   } catch (error) {
-    console.error('Error deleting webhook:', error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, 500, 'Server error', error);
   }
 };
 

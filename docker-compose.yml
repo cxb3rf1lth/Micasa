@@ -1,0 +1,86 @@
+# Docker Compose for local development and testing
+# Simulates AWS environment with PostgreSQL and Redis
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database (simulates AWS RDS)
+  postgres:
+    image: postgres:15-alpine
+    container_name: micasa-postgres
+    environment:
+      POSTGRES_USER: micasa
+      POSTGRES_PASSWORD: micasa_dev_password
+      POSTGRES_DB: micasa
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U micasa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache (simulates AWS ElastiCache)
+  redis:
+    image: redis:7-alpine
+    container_name: micasa-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Micasa Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: micasa-app
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      # Database (PostgreSQL)
+      RDS_HOSTNAME: postgres
+      RDS_PORT: 5432
+      RDS_USERNAME: micasa
+      RDS_PASSWORD: micasa_dev_password
+      RDS_DB_NAME: micasa
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # JWT
+      JWT_SECRET: development_secret_change_in_production
+      JWT_EXPIRE: 30d
+      # Client URL
+      CLIENT_URL: http://localhost:3000
+      # Logging
+      LOG_LEVEL: debug
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: micasa-network

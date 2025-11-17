@@ -1,17 +1,27 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Micasa Automated Installation Script
-# This script fully automates the setup of Micasa with SQLite database
+###############################################################################
+# Micasa - Automated Installation Script
+# This script automates the complete installation and setup of Micasa
+###############################################################################
 
-set -e  # Exit on error
+set -e  # Exit on any error
 
 echo ""
 echo "=========================================="
-echo "  🏠 Micasa Installation"
+echo "  🏠 Micasa Installation v1.0.0"
+echo "  Household Management for Couples"
 echo "=========================================="
 echo ""
 
-# Check if Node.js is installed
+###############################################################################
+# Check Prerequisites
+###############################################################################
+
+echo "🔍 Checking prerequisites..."
+echo ""
+
+# Check Node.js
 if ! command -v node &> /dev/null; then
     echo "❌ Node.js is not installed."
     echo "   Please install Node.js v16 or higher from: https://nodejs.org/"
@@ -27,9 +37,8 @@ if [ "$NODE_VERSION" -lt 16 ]; then
 fi
 
 echo "✅ Node.js version: $(node -v)"
-echo ""
 
-# Check if npm is installed
+# Check npm
 if ! command -v npm &> /dev/null; then
     echo "❌ npm is not installed."
     echo "   Please install npm."
@@ -37,93 +46,160 @@ if ! command -v npm &> /dev/null; then
 fi
 
 echo "✅ npm version: $(npm -v)"
+
+# Check git (optional)
+if command -v git &> /dev/null; then
+    echo "✅ Git version: $(git --version | cut -d' ' -f3)"
+fi
+
+echo ""
+echo "✅ All prerequisites met!"
 echo ""
 
-# Install dependencies
+###############################################################################
+# Install Dependencies
+###############################################################################
+
 echo "📦 Installing dependencies..."
 echo "   This may take a few minutes..."
 echo ""
 
-npm run install:all
-
-if [ $? -ne 0 ]; then
-    echo ""
-    echo "❌ Failed to install dependencies."
-    echo "   Please check your internet connection and try again."
+# Install root dependencies
+echo "→ Installing root dependencies..."
+npm install || {
+    echo "❌ Failed to install root dependencies"
     exit 1
-fi
+}
+
+# Install server dependencies
+echo "→ Installing server dependencies..."
+cd server && npm install && cd .. || {
+    echo "❌ Failed to install server dependencies"
+    exit 1
+}
+
+# Install client dependencies
+echo "→ Installing client dependencies..."
+cd client && npm install && cd .. || {
+    echo "❌ Failed to install client dependencies"
+    exit 1
+}
 
 echo ""
-echo "✅ Dependencies installed successfully!"
+echo "✅ All dependencies installed successfully!"
 echo ""
 
-# Create .env file
+###############################################################################
+# Setup Environment
+###############################################################################
+
 echo "⚙️  Configuring environment..."
+echo ""
 
+# Server environment
 if [ ! -f "server/.env" ]; then
-    # Generate JWT secret
-    JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
-    
-    # Create .env file
-    cat > server/.env << EOF
-PORT=5000
-JWT_SECRET=$JWT_SECRET
-NODE_ENV=development
-CLIENT_URL=http://localhost:3000
-EOF
-    
-    echo "✅ Environment configured with secure JWT secret"
+    echo "→ Creating server environment file..."
+    cp server/.env.example server/.env
+
+    # Generate a strong JWT secret using openssl if available
+    if command -v openssl &> /dev/null; then
+        JWT_SECRET=$(openssl rand -base64 48)
+        # Escape special characters for sed
+        JWT_SECRET_ESCAPED=$(echo "$JWT_SECRET" | sed 's/[&/\]/\\&/g')
+        # Replace JWT_SECRET in .env
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET_ESCAPED|" server/.env
+        else
+            sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET_ESCAPED|" server/.env
+        fi
+        echo "✅ Server .env created with auto-generated JWT secret"
+    else
+        # Fallback to Node.js crypto
+        JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(48).toString('base64'))")
+        JWT_SECRET_ESCAPED=$(echo "$JWT_SECRET" | sed 's/[&/\]/\\&/g')
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET_ESCAPED|" server/.env
+        else
+            sed -i "s|JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET_ESCAPED|" server/.env
+        fi
+        echo "✅ Server .env created with auto-generated JWT secret"
+    fi
 else
-    echo "✅ Environment file already exists"
+    echo "✅ Server .env already exists, skipping..."
 fi
 
+# Client environment
+if [ ! -f "client/.env" ]; then
+    echo "→ Creating client environment file..."
+    cp client/.env.example client/.env
+    echo "✅ Client .env created"
+else
+    echo "✅ Client .env already exists, skipping..."
+fi
+
+echo ""
+
+###############################################################################
+# Setup Database
+###############################################################################
+
+echo "🗄️  Setting up database..."
 echo ""
 
 # Create database directory
-echo "🗄️  Initializing database..."
 mkdir -p server/data
 echo "✅ Database directory created"
+echo "   Database will be automatically initialized on first server start"
 echo ""
 
-# Build the client
-echo "🔨 Building client application..."
-npm run build
+###############################################################################
+# Complete Installation
+###############################################################################
 
-if [ $? -ne 0 ]; then
-    echo ""
-    echo "❌ Failed to build client."
-    exit 1
-fi
-
-echo ""
-echo "✅ Client built successfully!"
-echo ""
 echo "=========================================="
 echo "  🎉 Installation Complete!"
 echo "=========================================="
 echo ""
 echo "Micasa is now ready to use!"
 echo ""
-echo "📋 Next Steps:"
+echo "📋 NEXT STEPS:"
 echo ""
 echo "1. Start the application:"
-echo "   Development mode:  npm run dev"
-echo "   Production mode:   npm run preview"
+echo "   ${GREEN}Development mode (recommended):${NC}"
+echo "   $ npm run dev"
+echo ""
+echo "   Production mode:"
+echo "   $ npm start"
 echo ""
 echo "2. Open your browser:"
-echo "   http://localhost:3000"
+echo "   Client: http://localhost:3000"
+echo "   Server API: http://localhost:5000"
+echo "   Health Check: http://localhost:5000/api/health"
 echo ""
-echo "3. Create your account and start managing your household!"
+echo "3. First-time setup:"
+echo "   • Register a new account"
+echo "   • Share your partner code with your partner"
+echo "   • Your partner registers and links with your code"
+echo "   • Start managing your household together!"
 echo ""
-echo "📚 Documentation:"
-echo "   - README.md - Overview and features"
-echo "   - FEATURES.md - Detailed feature guide"
-echo "   - DEPLOYMENT.md - Production deployment"
+echo "📚 DOCUMENTATION:"
+echo "   • README.md - Full documentation"
+echo "   • server/.env - Server configuration"
+echo "   • client/.env - Client configuration"
 echo ""
-echo "💡 Tips:"
-echo "   - The SQLite database is stored in: server/data/micasa.db"
-echo "   - No external database setup required!"
-echo "   - All data is stored locally and securely"
+echo "💡 USEFUL COMMANDS:"
+echo "   npm run dev          - Start in development mode (hot reload)"
+echo "   npm start            - Start in production mode"
+echo "   npm run server       - Start only the backend server"
+echo "   npm run client       - Start only the frontend client"
+echo "   npm run build:client - Build client for production"
 echo ""
-echo "Need help? Check the documentation or create an issue on GitHub!"
+echo "🔒 SECURITY REMINDER:"
+echo "   Before deploying to production:"
+echo "   • Review server/.env configuration"
+echo "   • Set NODE_ENV=production"
+echo "   • Configure HTTPS/SSL"
+echo "   • Update CLIENT_URL to your domain"
+echo ""
+echo "🏠 Happy household management!"
 echo ""
