@@ -1,4 +1,5 @@
 const Message = require('../models/Message');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 // Helper function to get household ID (consistent with other controllers)
 const getHouseholdId = (user) => {
@@ -63,6 +64,8 @@ const createMessage = async (req, res) => {
         householdId
       });
     }
+
+    await triggerWebhooks(householdId, 'message-received', { action: 'created', item: message });
 
     res.status(201).json(message);
   } catch (error) {

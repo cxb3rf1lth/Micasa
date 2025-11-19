@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { visionBoardAPI } from '../services/api';
+import { visionBoardAPI, appointmentsAPI, todosAPI } from '../services/api';
 import socketService from '../services/socket';
-import { FaPlus, FaTrash, FaEdit, FaCheckCircle } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaEdit, FaCheckCircle, FaCalendar, FaTasks } from 'react-icons/fa';
 import '../styles/VisionBoard.css';
 
 const VisionBoard = () => {
@@ -104,6 +104,55 @@ const VisionBoard = () => {
       await visionBoardAPI.update(item.id, { status: newStatus });
     } catch (error) {
       console.error('Error updating status:', error);
+    }
+  };
+
+  const handleConvertToAppointment = async (item) => {
+    try {
+      const appointmentData = {
+        title: item.title,
+        description: item.description || `Vision Board: ${item.type}`,
+        startTime: item.targetDate ? new Date(item.targetDate).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        endTime: item.targetDate ? new Date(new Date(item.targetDate).getTime() + 2 * 60 * 60 * 1000).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+        location: '',
+        attendees: [],
+        category: item.type === 'trip' ? 'Social' : 'Personal',
+        reminder: true,
+        isRecurring: false,
+        color: '#9D8DF1'
+      };
+
+      await appointmentsAPI.create(appointmentData);
+      alert('Successfully created appointment!');
+    } catch (error) {
+      console.error('Error converting to appointment:', error);
+      alert('Failed to create appointment');
+    }
+  };
+
+  const handleConvertToTodo = async (item) => {
+    try {
+      const todoData = {
+        title: `Action Plan: ${item.title}`,
+        description: item.description || '',
+        items: [
+          { text: 'Research and plan', isCompleted: false },
+          { text: 'Set budget and timeline', isCompleted: false },
+          { text: 'Take action', isCompleted: false },
+          { text: 'Review progress', isCompleted: false }
+        ],
+        isShared: true,
+        category: 'Personal',
+        priority: item.priority,
+        dueDate: item.targetDate || null,
+        color: '#9D8DF1'
+      };
+
+      await todosAPI.create(todoData);
+      alert('Successfully created action plan!');
+    } catch (error) {
+      console.error('Error converting to todo:', error);
+      alert('Failed to create action plan');
     }
   };
 
@@ -265,21 +314,38 @@ const VisionBoard = () => {
               <div className="item-header">
                 <div className="item-badges">
                   <span className="type-badge">{item.type}</span>
-                  <span 
-                    className="priority-badge" 
+                  <span
+                    className="priority-badge"
                     style={{ backgroundColor: getPriorityColor(item.priority) }}
                   >
                     {item.priority}
                   </span>
                 </div>
                 <div className="item-actions">
-                  <button onClick={() => handleEdit(item)}><FaEdit /></button>
-                  <button onClick={() => handleDelete(item.id)}><FaTrash /></button>
+                  <button onClick={() => handleEdit(item)} title="Edit"><FaEdit /></button>
+                  <button onClick={() => handleDelete(item.id)} title="Delete"><FaTrash /></button>
                 </div>
               </div>
 
               <h3>{item.title}</h3>
               {item.description && <p className="item-description">{item.description}</p>}
+
+              <div className="item-conversion-actions">
+                <button
+                  className="conversion-btn"
+                  onClick={() => handleConvertToAppointment(item)}
+                  title="Create Appointment"
+                >
+                  <FaCalendar /> Schedule
+                </button>
+                <button
+                  className="conversion-btn"
+                  onClick={() => handleConvertToTodo(item)}
+                  title="Create Action Plan"
+                >
+                  <FaTasks /> Action Plan
+                </button>
+              </div>
 
               <div className="item-footer">
                 <div className="status-selector">

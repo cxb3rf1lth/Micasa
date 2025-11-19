@@ -1,4 +1,5 @@
 const Chore = require('../models/Chore');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 // Helper function to get household ID
 const getHouseholdId = (user) => {
@@ -40,6 +41,8 @@ const createChore = async (req, res) => {
       estimatedTime
     });
 
+    await triggerWebhooks(householdId, 'chore-updated', { action: 'created', item: chore });
+
     res.status(201).json(chore);
   } catch (error) {
     console.error('Create chore error:', error);
@@ -71,6 +74,8 @@ const updateChore = async (req, res) => {
 
     const updatedChore = Chore.findByIdAndUpdate(id, updateData);
 
+    await triggerWebhooks(householdId, 'chore-updated', { action: 'updated', item: updatedChore });
+
     res.json(updatedChore);
   } catch (error) {
     console.error('Update chore error:', error);
@@ -93,6 +98,8 @@ const deleteChore = async (req, res) => {
     }
 
     Chore.findByIdAndDelete(id);
+
+    await triggerWebhooks(householdId, 'chore-updated', { action: 'deleted', item: { id, title: chore.title } });
 
     res.json({ message: 'Chore deleted' });
   } catch (error) {

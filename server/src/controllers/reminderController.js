@@ -1,4 +1,5 @@
 const Reminder = require('../models/Reminder');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 // Helper function to get household ID
 const getHouseholdId = (user) => {
@@ -41,6 +42,8 @@ const createReminder = async (req, res) => {
       createdBy: req.user._id
     });
 
+    await triggerWebhooks(householdId, 'reminder-updated', { action: 'created', item: reminder });
+
     res.status(201).json(reminder);
   } catch (error) {
     console.error('Create reminder error:', error);
@@ -71,6 +74,8 @@ const updateReminder = async (req, res) => {
 
     const updatedReminder = Reminder.findByIdAndUpdate(id, updateData);
 
+    await triggerWebhooks(householdId, 'reminder-updated', { action: 'updated', item: updatedReminder });
+
     res.json(updatedReminder);
   } catch (error) {
     console.error('Update reminder error:', error);
@@ -93,6 +98,8 @@ const deleteReminder = async (req, res) => {
     }
 
     Reminder.findByIdAndDelete(id);
+
+    await triggerWebhooks(householdId, 'reminder-updated', { action: 'deleted', item: { id, title: reminder.title } });
 
     res.json({ message: 'Reminder deleted' });
   } catch (error) {

@@ -1,4 +1,5 @@
 const WhiteboardNote = require('../models/WhiteboardNote');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 const getWhiteboardNotes = async (req, res) => {
   try {
@@ -29,13 +30,15 @@ const createWhiteboardNote = async (req, res) => {
     // Emit socket event for real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(householdId).emit('whiteboard-updated', { 
-        action: 'create', 
+      io.to(householdId).emit('whiteboard-updated', {
+        action: 'create',
         note,
-        householdId 
+        householdId
       });
     }
-    
+
+    await triggerWebhooks(householdId, 'whiteboard-updated', { action: 'created', item: note });
+
     res.status(201).json(note);
   } catch (error) {
     console.error('Error creating whiteboard note:', error);
@@ -58,13 +61,15 @@ const updateWhiteboardNote = async (req, res) => {
     // Emit socket event for real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(householdId).emit('whiteboard-updated', { 
-        action: 'update', 
+      io.to(householdId).emit('whiteboard-updated', {
+        action: 'update',
         note,
-        householdId 
+        householdId
       });
     }
-    
+
+    await triggerWebhooks(householdId, 'whiteboard-updated', { action: 'updated', item: note });
+
     res.json(note);
   } catch (error) {
     console.error('Error updating whiteboard note:', error);
@@ -87,13 +92,15 @@ const deleteWhiteboardNote = async (req, res) => {
     // Emit socket event for real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(householdId).emit('whiteboard-updated', { 
-        action: 'delete', 
+      io.to(householdId).emit('whiteboard-updated', {
+        action: 'delete',
         id,
-        householdId 
+        householdId
       });
     }
-    
+
+    await triggerWebhooks(householdId, 'whiteboard-updated', { action: 'deleted', item: { id } });
+
     res.json({ message: 'Note deleted successfully' });
   } catch (error) {
     console.error('Error deleting whiteboard note:', error);

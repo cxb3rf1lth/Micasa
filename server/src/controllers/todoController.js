@@ -1,4 +1,5 @@
 const TodoList = require('../models/TodoList');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 // Helper function to get household ID
 const getHouseholdId = (user) => {
@@ -42,6 +43,8 @@ const createTodoList = async (req, res) => {
       color
     });
 
+    await triggerWebhooks(householdId, 'todo-updated', { action: 'created', item: todoList });
+
     res.status(201).json(todoList);
   } catch (error) {
     console.error('Create todo error:', error);
@@ -64,6 +67,8 @@ const updateTodoList = async (req, res) => {
     }
 
     const updatedTodo = TodoList.findByIdAndUpdate(id, req.body);
+
+    await triggerWebhooks(householdId, 'todo-updated', { action: 'updated', item: updatedTodo });
 
     res.json(updatedTodo);
   } catch (error) {
@@ -88,6 +93,8 @@ const addTodoItem = async (req, res) => {
     }
 
     const updatedTodo = TodoList.addItem(id, { text, isCompleted: false });
+
+    await triggerWebhooks(householdId, 'todo-updated', { action: 'created', item: updatedTodo });
 
     res.json(updatedTodo);
   } catch (error) {
@@ -119,6 +126,8 @@ const updateTodoItem = async (req, res) => {
 
     const updatedTodo = TodoList.updateItem(id, itemId, updateData);
 
+    await triggerWebhooks(householdId, 'todo-updated', { action: 'updated', item: updatedTodo });
+
     res.json(updatedTodo);
   } catch (error) {
     console.error('Update todo item error:', error);
@@ -142,6 +151,8 @@ const deleteTodoItem = async (req, res) => {
 
     const updatedTodo = TodoList.deleteItem(id, itemId);
 
+    await triggerWebhooks(householdId, 'todo-updated', { action: 'deleted', item: updatedTodo });
+
     res.json(updatedTodo);
   } catch (error) {
     console.error('Delete todo item error:', error);
@@ -164,6 +175,8 @@ const deleteTodoList = async (req, res) => {
     }
 
     TodoList.findByIdAndDelete(id);
+
+    await triggerWebhooks(householdId, 'todo-updated', { action: 'deleted', item: { id, title: todo.title } });
 
     res.json({ message: 'Todo list deleted' });
   } catch (error) {

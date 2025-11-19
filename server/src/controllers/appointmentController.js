@@ -1,4 +1,5 @@
 const Appointment = require('../models/Appointment');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 // Helper function to get household ID
 const getHouseholdId = (user) => {
@@ -44,6 +45,8 @@ const createAppointment = async (req, res) => {
       createdBy: req.user._id
     });
 
+    await triggerWebhooks(householdId, 'appointment-updated', { action: 'created', item: appointment });
+
     res.status(201).json(appointment);
   } catch (error) {
     console.error('Create appointment error:', error);
@@ -67,6 +70,8 @@ const updateAppointment = async (req, res) => {
 
     const updatedAppointment = Appointment.findByIdAndUpdate(id, req.body);
 
+    await triggerWebhooks(householdId, 'appointment-updated', { action: 'updated', item: updatedAppointment });
+
     res.json(updatedAppointment);
   } catch (error) {
     console.error('Update appointment error:', error);
@@ -89,6 +94,8 @@ const deleteAppointment = async (req, res) => {
     }
 
     Appointment.findByIdAndDelete(id);
+
+    await triggerWebhooks(householdId, 'appointment-updated', { action: 'deleted', item: { id, title: appointment.title } });
 
     res.json({ message: 'Appointment deleted' });
   } catch (error) {

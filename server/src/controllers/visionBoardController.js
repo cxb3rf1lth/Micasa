@@ -1,4 +1,5 @@
 const VisionBoardItem = require('../models/VisionBoardItem');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 const getVisionBoardItems = async (req, res) => {
   try {
@@ -29,13 +30,15 @@ const createVisionBoardItem = async (req, res) => {
     // Emit socket event for real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(householdId).emit('vision-board-updated', { 
-        action: 'create', 
+      io.to(householdId).emit('vision-board-updated', {
+        action: 'create',
         item,
-        householdId 
+        householdId
       });
     }
-    
+
+    await triggerWebhooks(householdId, 'vision-board-updated', { action: 'created', item });
+
     res.status(201).json(item);
   } catch (error) {
     console.error('Error creating vision board item:', error);
@@ -58,13 +61,15 @@ const updateVisionBoardItem = async (req, res) => {
     // Emit socket event for real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(householdId).emit('vision-board-updated', { 
-        action: 'update', 
+      io.to(householdId).emit('vision-board-updated', {
+        action: 'update',
         item,
-        householdId 
+        householdId
       });
     }
-    
+
+    await triggerWebhooks(householdId, 'vision-board-updated', { action: 'updated', item });
+
     res.json(item);
   } catch (error) {
     console.error('Error updating vision board item:', error);
@@ -87,13 +92,15 @@ const deleteVisionBoardItem = async (req, res) => {
     // Emit socket event for real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(householdId).emit('vision-board-updated', { 
-        action: 'delete', 
+      io.to(householdId).emit('vision-board-updated', {
+        action: 'delete',
         id,
-        householdId 
+        householdId
       });
     }
-    
+
+    await triggerWebhooks(householdId, 'vision-board-updated', { action: 'deleted', item: { id } });
+
     res.json({ message: 'Item deleted successfully' });
   } catch (error) {
     console.error('Error deleting vision board item:', error);

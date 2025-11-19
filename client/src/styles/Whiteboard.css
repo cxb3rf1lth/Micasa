@@ -95,17 +95,33 @@
   text-transform: capitalize;
 }
 
+.note-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.convert-btn,
 .delete-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   padding: 0.5rem;
   border-radius: 50%;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.convert-btn:hover {
+  background: rgba(255, 215, 0, 0.5);
+  transform: scale(1.1);
 }
 
 .delete-btn:hover {
   background: rgba(255, 107, 107, 0.5);
+  transform: scale(1.1);
 }
 
 .note-content {

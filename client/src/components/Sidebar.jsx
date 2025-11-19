@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { FiHome, FiShoppingCart, FiCalendar, FiCheckSquare, FiBell, FiClipboard, FiEdit, FiTarget, FiMessageSquare, FiWifi, FiSettings } from 'react-icons/fi';
 import { motion } from 'framer-motion';
+import { messagesAPI } from '../services/api';
 import '../styles/Sidebar.css';
 
 const menuItems = [
@@ -18,8 +20,26 @@ const menuItems = [
 ];
 
 function Sidebar() {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Refresh unread count every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await messagesAPI.getUnreadCount();
+      setUnreadCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
+
   return (
-    <motion.aside 
+    <motion.aside
       className="sidebar"
       initial={{ x: -280 }}
       animate={{ x: 0 }}
@@ -31,7 +51,7 @@ function Sidebar() {
           Micasa
         </h1>
       </div>
-      
+
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <NavLink
@@ -41,6 +61,9 @@ function Sidebar() {
           >
             <item.icon className="sidebar-icon" />
             <span>{item.label}</span>
+            {item.path === '/messages' && unreadCount > 0 && (
+              <span className="sidebar-badge">{unreadCount}</span>
+            )}
           </NavLink>
         ))}
       </nav>

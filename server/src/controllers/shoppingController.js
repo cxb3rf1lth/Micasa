@@ -1,5 +1,6 @@
 const ShoppingNote = require('../models/ShoppingNote');
 const User = require('../models/User');
+const { triggerWebhooks } = require('../utils/webhookTrigger');
 
 // Helper function to get household ID
 const getHouseholdId = (user) => {
@@ -39,6 +40,12 @@ const createShoppingNote = async (req, res) => {
       createdBy: req.user._id
     });
 
+    // Trigger webhooks
+    await triggerWebhooks(householdId, 'shopping-updated', {
+      action: 'created',
+      item: shoppingNote
+    });
+
     res.status(201).json(shoppingNote);
   } catch (error) {
     console.error('Create shopping note error:', error);
@@ -70,6 +77,12 @@ const updateShoppingNote = async (req, res) => {
 
     const updatedNote = ShoppingNote.findByIdAndUpdate(id, updateData);
 
+    // Trigger webhooks
+    await triggerWebhooks(householdId, 'shopping-updated', {
+      action: 'updated',
+      item: updatedNote
+    });
+
     res.json(updatedNote);
   } catch (error) {
     console.error('Update shopping note error:', error);
@@ -92,6 +105,12 @@ const deleteShoppingNote = async (req, res) => {
     }
 
     ShoppingNote.findByIdAndDelete(id);
+
+    // Trigger webhooks
+    await triggerWebhooks(householdId, 'shopping-updated', {
+      action: 'deleted',
+      item: { id: note.id, item: note.item }
+    });
 
     res.json({ message: 'Shopping note deleted' });
   } catch (error) {

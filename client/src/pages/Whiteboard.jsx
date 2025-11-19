@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { whiteboardAPI } from '../services/api';
+import { whiteboardAPI, remindersAPI } from '../services/api';
 import socketService from '../services/socket';
-import { FaPlus, FaTrash, FaPalette } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaPalette, FaBell } from 'react-icons/fa';
 import '../styles/Whiteboard.css';
 
 const Whiteboard = () => {
@@ -74,6 +74,32 @@ const Whiteboard = () => {
       } catch (error) {
         console.error('Error deleting note:', error);
       }
+    }
+  };
+
+  const handleConvertToReminder = async (note) => {
+    try {
+      // Create a reminder from the whiteboard note
+      const reminderData = {
+        title: `Reminder: ${note.content.substring(0, 50)}${note.content.length > 50 ? '...' : ''}`,
+        description: note.content,
+        category: 'Personal',
+        reminderDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Default to tomorrow
+        isRecurring: false,
+        notifyBoth: true,
+        priority: 'Medium'
+      };
+
+      await remindersAPI.create(reminderData);
+      alert('Successfully converted to reminder!');
+
+      // Optionally delete the whiteboard note after conversion
+      if (window.confirm('Would you like to delete this whiteboard note?')) {
+        await whiteboardAPI.delete(note.id);
+      }
+    } catch (error) {
+      console.error('Error converting to reminder:', error);
+      alert('Failed to convert to reminder');
     }
   };
 
@@ -176,12 +202,23 @@ const Whiteboard = () => {
             >
               <div className="note-header">
                 <span className="note-type">{note.type}</span>
-                <button 
-                  className="delete-btn" 
-                  onClick={() => handleDelete(note.id)}
-                >
-                  <FaTrash />
-                </button>
+                <div className="note-actions">
+                  {note.type === 'reminder' && (
+                    <button
+                      className="convert-btn"
+                      onClick={() => handleConvertToReminder(note)}
+                      title="Convert to Reminder"
+                    >
+                      <FaBell />
+                    </button>
+                  )}
+                  <button
+                    className="delete-btn"
+                    onClick={() => handleDelete(note.id)}
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
               </div>
               <div className="note-content">{note.content}</div>
               <div className="note-footer">
